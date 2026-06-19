@@ -33,21 +33,26 @@ export async function createCliente(formData: FormData) {
 export async function createTramite(formData: FormData) {
   const supabase = createClient()
   
-  // OBTENER AL USUARIO LOGUEADO
+  // Obtenemos los datos de sesión más frescos del servidor
   const { data: { user } } = await supabase.auth.getUser()
   
+  // Intentamos obtener el nombre de todas las formas posibles
+  const nombreMetadata = user?.user_metadata?.full_name;
+  const emailNombre = user?.email?.split('@')[0];
+  
+  // Prioridad: 1. Nombre real, 2. Email limpio, 3. Administrador por defecto
+  const nombreDefinitivo = nombreMetadata || emailNombre || 'Administrador';
+
   const data = {
     cliente_id: formData.get('cliente_id') as string,
     tipo_tramite: formData.get('tipo_tramite') as string,
     estado: 'pendiente',
     fecha_vencimiento: formData.get('fecha_vencimiento') as string || null,
     observaciones: formData.get('observaciones') as string,
-    // GUARDAR QUIÉN LO CREÓ (Usa el email si no configuraste el perfil)
-    creado_por: user?.email // Aquí se guardará valentina@estudio.com, claudio@...
+    creado_por: nombreDefinitivo // Guardamos el nombre limpio
   }
 
   const { error } = await supabase.from('tramites').insert(data)
-
   if (error) throw new Error(error.message)
   
   revalidatePath('/tramites')
