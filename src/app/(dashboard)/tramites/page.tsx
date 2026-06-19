@@ -88,7 +88,7 @@ export default async function TramitesPage() {
                           }
                         }}
                       >
-                        <MessageSquareWrite size={14} />
+                        <MessageSquare size={14} />
                       </button>
                     </div>
                   </td>
