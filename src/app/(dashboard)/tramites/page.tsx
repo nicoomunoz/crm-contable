@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 import { updateTramiteStatus, updateTramiteObservacion } from '@/app/actions'
-import { Clock, CheckCircle2, AlertCircle, MessageSquareWrite, Calendar } from 'lucide-react'
+import { Clock, CheckCircle2, AlertCircle, MessageSquare, Calendar } from 'lucide-react'
 
 export default async function TramitesPage() {
   const supabase = createClient()
