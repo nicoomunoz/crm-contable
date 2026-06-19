@@ -3,39 +3,33 @@ import { createClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-// FUNCIÓN PARA LOGIN
 export async function login(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const supabase = createClient()
-
   const { error } = await supabase.auth.signInWithPassword({ email, password })
-
   if (error) redirect('/login?error=true')
   redirect('/dashboard')
 }
 
-// FUNCIÓN PARA CREAR CLIENTES
 export async function createCliente(formData: FormData) {
   const supabase = createClient()
+  // Obtenemos el usuario actual para la trazabilidad
+  const { data: { user } } = await supabase.auth.getUser()
   
   const data = {
     razon_social: formData.get('razon_social') as string,
     cuit: formData.get('cuit') as string,
     email: formData.get('email') as string,
     telefono: formData.get('telefono') as string,
-    direccion: formData.get('direccion') as string,
   }
 
   const { error } = await supabase.from('clientes').insert(data)
-
   if (error) throw new Error(error.message)
-  
   revalidatePath('/clientes')
   redirect('/clientes')
 }
 
-// FUNCIÓN PARA CREAR TRÁMITES (ESTA ES LA QUE TE DABA ERROR)
 export async function createTramite(formData: FormData) {
   const supabase = createClient()
   
@@ -44,22 +38,29 @@ export async function createTramite(formData: FormData) {
     tipo_tramite: formData.get('tipo_tramite') as string,
     estado: 'pendiente',
     fecha_vencimiento: formData.get('fecha_vencimiento') as string || null,
-    observaciones: formData.get('observaciones') as string
+    observaciones: formData.get('observaciones') as string,
   }
 
   const { error } = await supabase.from('tramites').insert(data)
-
-  if (error) {
-    console.error(error)
-    throw new Error(error.message)
-  }
+  if (error) throw new Error(error.message)
   
   revalidatePath('/tramites')
-  revalidatePath('/dashboard')
   redirect('/tramites')
 }
 
-// FUNCIÓN PARA SALIR
+// NUEVA FUNCIÓN: ACTUALIZAR ESTADO DEL TRÁMITE
+export async function updateTramiteStatus(id: string, nuevoEstado: string) {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('tramites')
+    .update({ estado: nuevoEstado })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/tramites')
+  revalidatePath('/dashboard')
+}
+
 export async function signOut() {
   const supabase = createClient()
   await supabase.auth.signOut()
