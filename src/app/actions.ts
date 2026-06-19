@@ -77,3 +77,13 @@ export async function signOut() {
   await supabase.auth.signOut()
   redirect('/login')
 }
+export async function updateTramiteObservacion(id: string, nota: string) {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('tramites')
+    .update({ observaciones: nota })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/tramites')
+}
