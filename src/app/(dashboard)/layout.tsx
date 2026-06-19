@@ -1,36 +1,67 @@
 import { ReactNode } from 'react'
+import { signOut } from '@/app/actions'
 import { Users, LayoutDashboard, Briefcase, LogOut } from 'lucide-react'
 import Link from 'next/link'
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 text-slate-900 font-sans">
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col">
-        <div className="p-6 text-xl font-bold border-b border-slate-800">
-          Contador CRM
+      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col fixed h-full border-r border-slate-800">
+        <div className="p-6 border-b border-slate-800 flex items-center gap-3">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+            <Briefcase size={18} />
+          </div>
+          <span className="text-white font-bold tracking-tight text-lg">
+            Estudio CRM
+          </span>
         </div>
-        <nav className="flex-1 p-4 space-y-2">
-          <Link href="/dashboard" className="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg">
-            <LayoutDashboard size={20} /> Dashboard
+        
+        <nav className="flex-1 p-4 space-y-1">
+          <Link 
+            href="/dashboard" 
+            className="flex items-center gap-3 p-3 hover:bg-slate-800 hover:text-white rounded-xl transition duration-200"
+          >
+            <LayoutDashboard size={20} /> 
+            <span className="font-medium">Dashboard</span>
           </Link>
-          <Link href="/clientes" className="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg">
-            <Users size={20} /> Clientes
+          
+          <Link 
+            href="/clientes" 
+            className="flex items-center gap-3 p-3 hover:bg-slate-800 hover:text-white rounded-xl transition duration-200"
+          >
+            <Users size={20} /> 
+            <span className="font-medium">Clientes</span>
           </Link>
-          <Link href="/tramites" className="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg">
-            <Briefcase size={20} /> Trámites
+          
+          <Link 
+            href="/tramites" 
+            className="flex items-center gap-3 p-3 hover:bg-slate-800 hover:text-white rounded-xl transition duration-200"
+          >
+            <Briefcase size={20} /> 
+            <span className="font-medium">Trámites</span>
           </Link>
         </nav>
+
+        {/* Footer Sidebar / Logout */}
         <div className="p-4 border-t border-slate-800">
-           <button className="flex items-center gap-3 p-3 w-full hover:bg-red-900 rounded-lg text-red-400">
-            <LogOut size={20} /> Salir
-          </button>
+           <form action={signOut}>
+              <button 
+                type="submit" 
+                className="flex items-center gap-3 p-3 w-full hover:bg-red-950/40 rounded-xl text-red-400 hover:text-red-300 transition duration-200 group"
+              >
+                <LogOut size={20} className="group-hover:translate-x-1 transition-transform" /> 
+                <span className="font-bold">Cerrar sesión</span>
+              </button>
+           </form>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 p-8 text-slate-800">
-        {children}
+      {/* Main Content Area */}
+      <main className="flex-1 pl-64 overflow-y-auto">
+        <div className="p-8 max-w-7xl mx-auto">
+          {children}
+        </div>
       </main>
     </div>
   )
