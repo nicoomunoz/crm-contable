@@ -87,3 +87,33 @@ export async function updateTramiteObservacion(id: string, nota: string) {
   if (error) throw new Error(error.message)
   revalidatePath('/tramites')
 }
+// FUNCIÓN PARA EDITAR TRÁMITE COMPLETO
+export async function updateTramite(formData: FormData) {
+  const supabase = createClient()
+  const id = formData.get('id') as string
+  
+  const data = {
+    cliente_id: formData.get('cliente_id') as string,
+    tipo_tramite: formData.get('tipo_tramite') as string,
+    fecha_vencimiento: formData.get('fecha_vencimiento') as string || null,
+    observaciones: formData.get('observaciones') as string
+  }
+
+  const { error } = await supabase.from('tramites').update(data).eq('id', id)
+  if (error) throw new Error(error.message)
+  
+  revalidatePath('/tramites')
+  redirect('/tramites')
+}
+
+// FUNCIÓN PARA BORRAR TRÁMITE
+export async function deleteTramite(formData: FormData) {
+  const supabase = createClient()
+  const id = formData.get('id') as string
+  
+  const { error } = await supabase.from('tramites').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+  
+  revalidatePath('/tramites')
+  revalidatePath('/dashboard')
+}
