@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-// FUNCIÓN PARA LOGIN
 export async function login(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
@@ -13,7 +12,6 @@ export async function login(formData: FormData) {
   redirect('/dashboard')
 }
 
-// CLIENTES
 export async function createCliente(formData: FormData) {
   const supabase = createClient()
   const data = {
@@ -27,18 +25,16 @@ export async function createCliente(formData: FormData) {
   redirect('/clientes')
 }
 
-// TRÁMITES
 export async function createTramite(formData: FormData) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const nombre = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Admin'
   const data = {
     cliente_id: formData.get('cliente_id') as string,
     tipo_tramite: formData.get('tipo_tramite') as string,
     estado: 'pendiente',
     fecha_vencimiento: formData.get('fecha_vencimiento') as string || null,
     observaciones: formData.get('observaciones') as string,
-    creado_por: nombre
+    creado_por: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Administrador'
   }
   await supabase.from('tramites').insert(data)
   revalidatePath('/tramites')
@@ -51,7 +47,6 @@ export async function updateTramiteStatus(formData: FormData) {
   const nuevoEstado = formData.get('nuevoEstado') as string
   await supabase.from('tramites').update({ estado: nuevoEstado }).eq('id', id)
   revalidatePath('/tramites')
-  revalidatePath('/dashboard')
 }
 
 export async function deleteTramite(formData: FormData) {
@@ -59,17 +54,14 @@ export async function deleteTramite(formData: FormData) {
   const id = formData.get('id') as string
   await supabase.from('tramites').delete().eq('id', id)
   revalidatePath('/tramites')
-  revalidatePath('/dashboard')
 }
 
-// ACTUALIZAR NOTA (EXPORTADO EXPLÍCITAMENTE)
 export async function updateTramiteObservacion(id: string, nota: string) {
   const supabase = createClient()
   await supabase.from('tramites').update({ observaciones: nota }).eq('id', id)
   revalidatePath('/tramites')
 }
 
-// EDITAR TRÁMITE COMPLETO
 export async function updateTramite(formData: FormData) {
   const supabase = createClient()
   const id = formData.get('id') as string
@@ -84,7 +76,6 @@ export async function updateTramite(formData: FormData) {
   redirect('/tramites')
 }
 
-// CERRAR SESIÓN
 export async function signOut() {
   const supabase = createClient()
   await supabase.auth.signOut()
