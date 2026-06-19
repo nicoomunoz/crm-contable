@@ -13,11 +13,11 @@ export default async function EditarNotaPage({ searchParams }: { searchParams: {
     .single()
 
   // 2. Acción para guardar desde el formulario
-  async function guardarCambio(formData: FormData) {
+ async function guardarCambio(formData: FormData) {
     'use server'
-    const id = formData.get('id') as string
-    const nota = formData.get('nota') as string
-    await updateTramiteObservacion(id, nota)
+    const idLocal = searchParams.id
+    const notaLocal = formData.get('nota') as string
+    await updateTramiteObservacion(idLocal, notaLocal)
     redirect('/tramites')
   }
 
