@@ -1,16 +1,7 @@
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
-import { updateTramiteStatus } from '@/app/actions'
-import { Clock, CheckCircle2, AlertCircle } from 'lucide-react'
-
-// FUNCIÓN AUXILIAR PARA EMBELLECER LOS NOMBRES DEL EQUIPO
-const limpiarNombre = (texto?: string) => {
-  if (!texto) return 'Sin Asignar'
-  // Si es un email, toma solo lo que está antes del @
-  const nombre = texto.includes('@') ? texto.split('@')[0].replace('.', ' ') : texto
-  // Convierte la primera letra en Mayúscula (ej. "valentina" -> "Valentina")
-  return nombre.charAt(0).toUpperCase() + nombre.slice(1)
-}
+import { updateTramiteStatus, updateTramiteObservacion } from '@/app/actions'
+import { Clock, CheckCircle2, AlertCircle, MessageSquareWrite, Calendar } from 'lucide-react'
 
 export default async function TramitesPage() {
   const supabase = createClient()
@@ -21,107 +12,102 @@ export default async function TramitesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-end">
+      <div className="flex justify-between items-center px-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Trámites</h1>
-          <p className="text-slate-500">Gestión del flujo de trabajo del estudio.</p>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight italic">Trámites</h1>
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Control operativo del estudio</p>
         </div>
-        <Link 
-          href="/tramites/nuevo" 
-          className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2 text-sm"
-        >
-          + Iniciar Trámite
+        <Link href="/tramites/nuevo" className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black shadow-xl hover:bg-blue-600 transition-all active:scale-95 text-xs uppercase tracking-[0.1em]">
+          + Nuevo Trámite
         </Link>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xl shadow-slate-100">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-slate-50/50 border-b border-slate-100 text-slate-400 text-[10px] uppercase font-bold tracking-widest">
-              <th className="px-6 py-5">Cliente</th>
-              <th className="px-6 py-5">Trámite</th>
-              <th className="px-6 py-5">Responsable</th>
-              <th className="px-6 py-5">Estado</th>
-              <th className="px-6 py-5 text-center">Acción Rápida</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {tramites?.map((t: any) => {
-              const nombreLimpio = limpiarNombre(t.creado_por)
-              const inicial = nombreLimpio.charAt(0).toUpperCase()
-
-              return (
-                <tr key={t.id} className="hover:bg-slate-50/80 transition duration-150">
-                  {/* COLUMNA CLIENTE */}
-                  <td className="px-6 py-5">
-                    <p className="font-bold text-slate-800 text-sm">{t.clientes?.razon_social || 'Cliente eliminado'}</p>
-                  </td>
-                  
-                  {/* COLUMNA TIPO TRÁMITE */}
-                  <td className="px-6 py-5">
-                    <p className="text-slate-700 font-medium text-sm">{t.tipo_tramite}</p>
+      <div className="bg-white border border-slate-100 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200/40">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/50 border-b border-slate-100 text-slate-400 text-[10px] uppercase font-black tracking-widest">
+                <th className="px-8 py-6">Cliente y Trámite</th>
+                <th className="px-8 py-6">Responsable</th>
+                <th className="px-8 py-6">Estado</th>
+                <th className="px-8 py-6">Observaciones</th>
+                <th className="px-8 py-6 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {tramites?.map((t: any) => (
+                <tr key={t.id} className="hover:bg-blue-50/30 transition-all group">
+                  {/* CLIENTE Y TRÁMITE */}
+                  <td className="px-8 py-6">
+                    <p className="font-black text-blue-600 text-[11px] uppercase tracking-tighter mb-1">{t.clientes?.razon_social}</p>
+                    <p className="text-slate-800 font-bold text-lg leading-none mb-2 tracking-tight">{t.tipo_tramite}</p>
                     {t.fecha_vencimiento && (
-                      <span className="inline-block px-2 py-0.5 bg-red-50 text-red-600 rounded text-[10px] font-bold uppercase tracking-wider mt-1 border border-red-100">
-                        Vence: {new Date(t.fecha_vencimiento).toLocaleDateString()}
-                      </span>
+                      <div className="inline-flex items-center gap-1.5 bg-red-50 text-red-500 px-2 py-1 rounded-md text-[9px] font-black uppercase">
+                        <Calendar size={10} /> Vence: {new Date(t.fecha_vencimiento).toLocaleDateString()}
+                      </div>
                     )}
                   </td>
-                  
-                  {/* COLUMNA RESPONSABLE (CLAUDIO, VALE, GIULI...) */}
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-slate-900 flex items-center justify-center text-xs font-black text-white shadow-sm">
-                        {inicial}
+
+                  {/* RESPONSABLE */}
+                  <td className="px-8 py-6 text-center">
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-[11px] font-black text-white uppercase border-4 border-white shadow-lg">
+                        {t.creado_por?.charAt(0) || 'S'}
                       </div>
-                      <span className="text-sm font-bold text-slate-700">
-                        {nombreLimpio}
-                      </span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{t.creado_por || 'Sistema'}</span>
                     </div>
                   </td>
-                  
-                  {/* COLUMNA ESTADO */}
-                  <td className="px-6 py-5">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                      t.estado === 'pendiente' ? 'bg-orange-50 text-orange-600 border-orange-200' : 
-                      t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                      t.estado === 'vencido' ? 'bg-red-50 text-red-600 border-red-200' :
-                      'bg-emerald-50 text-emerald-600 border-emerald-200'
+
+                  {/* ESTADO */}
+                  <td className="px-8 py-6">
+                    <span className={`inline-flex px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 ${
+                      t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500 border-orange-100' : 
+                      t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500 border-blue-100' :
+                      t.estado === 'vencido' ? 'bg-red-50 text-red-500 border-red-100' :
+                      'bg-emerald-50 text-emerald-600 border-emerald-100'
                     }`}>
-                      {t.estado.replace('_', ' ')}
+                      {t.estado}
                     </span>
                   </td>
-                  
-                  {/* COLUMNA BOTONES DE CAMBIO DE ESTADO */}
-                  <td className="px-6 py-5">
-                    <form className="flex justify-center gap-1.5">
+
+                  {/* OBSERVACIONES EDITABLES */}
+                  <td className="px-8 py-6 min-w-[250px]">
+                    <div className="relative group/note">
+                      <p className="text-sm text-slate-500 italic bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 line-clamp-2 hover:line-clamp-none transition-all">
+                         {t.observaciones || 'Sin anotaciones adicionales...'}
+                      </p>
+                      {/* Botón flotante para editar la nota (se verá mejor con JS pero así es funcional) */}
                       <button 
-                        formAction={async () => { 'use server'; await updateTramiteStatus(t.id, 'en_proceso') }} 
-                        title="Marcar En Proceso" 
-                        className="p-1.5 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-lg text-slate-400 hover:text-blue-600 transition"
+                        title="Modificar observación"
+                        className="absolute -top-2 -right-2 bg-white shadow-md p-1.5 rounded-full border border-slate-100 text-slate-400 hover:text-blue-600 hidden group-hover/note:block transition"
+                        onClick={() => {
+                          const nuevaNota = window.prompt("Editar observación de este trámite:", t.observaciones || "");
+                          if (nuevaNota !== null) {
+                            // Usamos el server action vía una ruta o componente
+                            window.location.href = `/tramites/actualizar-nota?id=${t.id}&nota=${encodeURIComponent(nuevaNota)}`;
+                          }
+                        }}
                       >
-                        <Clock size={16} />
+                        <MessageSquareWrite size={14} />
                       </button>
-                      <button 
-                        formAction={async () => { 'use server'; await updateTramiteStatus(t.id, 'finalizado') }} 
-                        title="Marcar Finalizado" 
-                        className="p-1.5 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 rounded-lg text-slate-400 hover:text-emerald-600 transition"
-                      >
-                        <CheckCircle2 size={16} />
-                      </button>
-                      <button 
-                        formAction={async () => { 'use server'; await updateTramiteStatus(t.id, 'vencido') }} 
-                        title="Marcar Vencido" 
-                        className="p-1.5 bg-slate-50 hover:bg-red-50 border border-slate-200 hover:border-red-200 rounded-lg text-slate-400 hover:text-red-600 transition"
-                      >
-                        <AlertCircle size={16} />
-                      </button>
-                    </form>
+                    </div>
+                  </td>
+
+                  {/* ACCIONES */}
+                  <td className="px-8 py-6">
+                    <div className="flex flex-col gap-2">
+                      <form className="grid grid-cols-3 gap-1">
+                        <button formAction={async () => { 'use server'; await updateTramiteStatus(t.id, 'en_proceso') }} title="En Proceso" className="flex items-center justify-center p-2 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-blue-500 hover:border-blue-200 transition shadow-sm"><Clock size={16} /></button>
+                        <button formAction={async () => { 'use server'; await updateTramiteStatus(t.id, 'finalizado') }} title="Finalizar" className="flex items-center justify-center p-2 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-green-500 hover:border-green-200 transition shadow-sm"><CheckCircle2 size={16} /></button>
+                        <button formAction={async () => { 'use server'; await updateTramiteStatus(t.id, 'vencido') }} title="Vencido" className="flex items-center justify-center p-2 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-red-500 hover:border-red-200 transition shadow-sm"><AlertCircle size={16} /></button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )
