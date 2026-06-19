@@ -16,7 +16,7 @@ export async function createCliente(formData: FormData) {
   const supabase = createClient()
   // Obtenemos el usuario actual para la trazabilidad
   const { data: { user } } = await supabase.auth.getUser()
-  
+  const nombreResponsable = user?.user_metadata?.full_name || user?.email || 'Sistema'
   const data = {
     razon_social: formData.get('razon_social') as string,
     cuit: formData.get('cuit') as string,
