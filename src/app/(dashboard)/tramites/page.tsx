@@ -37,7 +37,6 @@ export default async function TramitesPage() {
             <tbody className="divide-y divide-slate-50">
               {tramites?.map((t: any) => (
                 <tr key={t.id} className="hover:bg-blue-50/30 transition-all group">
-                  {/* CLIENTE Y TRÁMITE */}
                   <td className="px-8 py-6">
                     <p className="font-black text-blue-600 text-[11px] uppercase tracking-tighter mb-1">{t.clientes?.razon_social}</p>
                     <p className="text-slate-800 font-bold text-lg leading-none mb-2 tracking-tight">{t.tipo_tramite}</p>
@@ -48,7 +47,6 @@ export default async function TramitesPage() {
                     )}
                   </td>
 
-                  {/* RESPONSABLE */}
                   <td className="px-8 py-6 text-center">
                     <div className="flex flex-col items-center gap-1">
                       <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-[11px] font-black text-white uppercase border-4 border-white shadow-lg">
@@ -58,48 +56,37 @@ export default async function TramitesPage() {
                     </div>
                   </td>
 
-                  {/* ESTADO */}
                   <td className="px-8 py-6">
                     <span className={`inline-flex px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 ${
                       t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500 border-orange-100' : 
                       t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500 border-blue-100' :
-                      t.estado === 'vencido' ? 'bg-red-50 text-red-500 border-red-100' :
+                      t.estado === 'vencido' ? 'bg-red-50 text-red-600 border-red-100' :
                       'bg-emerald-50 text-emerald-600 border-emerald-100'
                     }`}>
                       {t.estado}
                     </span>
                   </td>
 
-                  {/* OBSERVACIONES EDITABLES */}
                   <td className="px-8 py-6 min-w-[250px]">
                     <div className="relative group/note">
-                      <p className="text-sm text-slate-500 italic bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 line-clamp-2 hover:line-clamp-none transition-all">
+                      <p className="text-sm text-slate-500 italic bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 line-clamp-2 hover:line-clamp-none transition-all cursor-default">
                          {t.observaciones || 'Sin anotaciones adicionales...'}
                       </p>
-                      {/* Botón flotante para editar la nota (se verá mejor con JS pero así es funcional) */}
-                      <button 
-                        title="Modificar observación"
+                      <Link 
+                        href={`/tramites/actualizar-nota?id=${t.id}`}
                         className="absolute -top-2 -right-2 bg-white shadow-md p-1.5 rounded-full border border-slate-100 text-slate-400 hover:text-blue-600 hidden group-hover/note:block transition"
-                        onClick={() => {
-                          const nuevaNota = window.prompt("Editar observación de este trámite:", t.observaciones || "");
-                          if (nuevaNota !== null) {
-                            // Usamos el server action vía una ruta o componente
-                            window.location.href = `/tramites/actualizar-nota?id=${t.id}&nota=${encodeURIComponent(nuevaNota)}`;
-                          }
-                        }}
                       >
                         <MessageSquare size={14} />
-                      </button>
+                      </Link>
                     </div>
                   </td>
 
-                  {/* ACCIONES */}
                   <td className="px-8 py-6">
                     <div className="flex flex-col gap-2">
                       <form className="grid grid-cols-3 gap-1">
-                        <button formAction={async () => { 'use server'; await updateTramiteStatus(t.id, 'en_proceso') }} title="En Proceso" className="flex items-center justify-center p-2 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-blue-500 hover:border-blue-200 transition shadow-sm"><Clock size={16} /></button>
-                        <button formAction={async () => { 'use server'; await updateTramiteStatus(t.id, 'finalizado') }} title="Finalizar" className="flex items-center justify-center p-2 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-green-500 hover:border-green-200 transition shadow-sm"><CheckCircle2 size={16} /></button>
-                        <button formAction={async () => { 'use server'; await updateTramiteStatus(t.id, 'vencido') }} title="Vencido" className="flex items-center justify-center p-2 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-red-500 hover:border-red-200 transition shadow-sm"><AlertCircle size={16} /></button>
+                        <button formAction={async () => { 'use server'; await updateTramiteStatus(t.id, 'en_proceso') }} className="flex items-center justify-center p-2 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-blue-500 hover:border-blue-200 transition shadow-sm"><Clock size={16} /></button>
+                        <button formAction={async () => { 'use server'; await updateTramiteStatus(t.id, 'finalizado') }} className="flex items-center justify-center p-2 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-green-500 hover:border-green-200 transition shadow-sm"><CheckCircle2 size={16} /></button>
+                        <button formAction={async () => { 'use server'; await updateTramiteStatus(t.id, 'vencido') }} className="flex items-center justify-center p-2 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-red-500 hover:border-red-200 transition shadow-sm"><AlertCircle size={16} /></button>
                       </form>
                     </div>
                   </td>
