@@ -12,6 +12,13 @@ export async function login(formData: FormData) {
   redirect('/dashboard')
 }
 
+export async function signOut() {
+  const supabase = createClient()
+  await supabase.auth.signOut()
+  redirect('/login')
+}
+
+// CLIENTES
 export async function createCliente(formData: FormData) {
   const supabase = createClient()
   const data = {
@@ -25,10 +32,11 @@ export async function createCliente(formData: FormData) {
   redirect('/clientes')
 }
 
+// TRÁMITES
 export async function createTramite(formData: FormData) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const nombre = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Admin'
+  const nombre = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Administrador'
   
   const data = {
     cliente_id: formData.get('cliente_id') as string,
@@ -58,14 +66,26 @@ export async function deleteTramite(formData: FormData) {
   revalidatePath('/tramites')
 }
 
+// LA QUE FALTABA: EDITAR TODO EL TRÁMITE
+export async function updateTramite(formData: FormData) {
+  const supabase = createClient()
+  const id = formData.get('id') as string
+  
+  const data = {
+    cliente_id: formData.get('cliente_id') as string,
+    tipo_tramite: formData.get('tipo_tramite') as string,
+    fecha_vencimiento: formData.get('fecha_vencimiento') as string || null,
+    observaciones: formData.get('observaciones') as string
+  }
+
+  await supabase.from('tramites').update(data).eq('id', id)
+  revalidatePath('/tramites')
+  redirect('/tramites')
+}
+
+// EDITAR SOLO OBSERVACIÓN (Link de la nubecita)
 export async function updateTramiteObservacion(id: string, nota: string) {
   const supabase = createClient()
   await supabase.from('tramites').update({ observaciones: nota }).eq('id', id)
   revalidatePath('/tramites')
-}
-
-export async function signOut() {
-  const supabase = createClient()
-  await supabase.auth.signOut()
-  redirect('/login')
 }
