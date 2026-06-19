@@ -49,10 +49,16 @@ export async function updateTramiteStatus(id: string, nuevoEstado: string) {
   revalidatePath('/tramites')
 }
 
-export async function deleteTramite(id: string) {
+export async function deleteTramite(formData: FormData) {
   const supabase = createClient()
-  await supabase.from('tramites').delete().eq('id', id)
+  const id = formData.get('id') as string // Recuperamos el ID desde el formulario
+  
+  const { error } = await supabase.from('tramites').delete().eq('id', id)
+  
+  if (error) throw new Error(error.message)
+  
   revalidatePath('/tramites')
+  revalidatePath('/dashboard')
 }
 
 export async function updateTramite(formData: FormData) {
