@@ -1,3 +1,7 @@
-export default function Home() {
-  return <h1>CRM Contable funcionando</h1>
+import { redirect } from 'next/navigation'
+
+export default function RootPage() {
+  // Simplemente redirigimos al dashboard. 
+  // El middleware se encargará de frenar el acceso si no está logueado.
+  redirect('/dashboard')
 }
