@@ -73,11 +73,11 @@ export default async function TramitesPage() {
                          {t.observaciones || 'Sin anotaciones adicionales...'}
                       </p>
                       <Link 
-                        href={`/tramites/actualizar-nota?id=${t.id}`}
-                        className="absolute -top-2 -right-2 bg-white shadow-md p-1.5 rounded-full border border-slate-100 text-slate-400 hover:text-blue-600 hidden group-hover/note:block transition"
-                      >
-                        <MessageSquare size={14} />
-                      </Link>
+                      href={`/tramites/actualizar-nota?id=${t.id}`}
+                      className="absolute -top-2 -right-2 bg-white shadow-lg p-2 rounded-full border border-slate-200 text-slate-400 hover:text-blue-600 hover:scale-110 transition-all"
+                    >
+                      <MessageSquare size={16} />
+                    </Link>
                     </div>
                   </td>
 
