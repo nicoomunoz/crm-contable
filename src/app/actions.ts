@@ -14,106 +14,69 @@ export async function login(formData: FormData) {
 
 export async function createCliente(formData: FormData) {
   const supabase = createClient()
-  // Obtenemos el usuario actual para la trazabilidad
-  const { data: { user } } = await supabase.auth.getUser()
-  const nombreResponsable = user?.user_metadata?.full_name || user?.email || 'Sistema'
   const data = {
     razon_social: formData.get('razon_social') as string,
     cuit: formData.get('cuit') as string,
     email: formData.get('email') as string,
-    telefono: formData.get('telefono') as string,
+    telefono: formData.get('telefono') as string
   }
-
-  const { error } = await supabase.from('clientes').insert(data)
-  if (error) throw new Error(error.message)
+  await supabase.from('clientes').insert(data)
   revalidatePath('/clientes')
   redirect('/clientes')
 }
 
 export async function createTramite(formData: FormData) {
   const supabase = createClient()
-  
-  // Obtenemos los datos de sesión más frescos del servidor
   const { data: { user } } = await supabase.auth.getUser()
+  const nombre = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Administrador'
   
-  // Intentamos obtener el nombre de todas las formas posibles
-  const nombreMetadata = user?.user_metadata?.full_name;
-  const emailNombre = user?.email?.split('@')[0];
-  
-  // Prioridad: 1. Nombre real, 2. Email limpio, 3. Administrador por defecto
-  const nombreDefinitivo = nombreMetadata || emailNombre || 'Administrador';
-
   const data = {
     cliente_id: formData.get('cliente_id') as string,
     tipo_tramite: formData.get('tipo_tramite') as string,
     estado: 'pendiente',
     fecha_vencimiento: formData.get('fecha_vencimiento') as string || null,
     observaciones: formData.get('observaciones') as string,
-    creado_por: nombreDefinitivo // Guardamos el nombre limpio
+    creado_por: nombre
   }
-
-  const { error } = await supabase.from('tramites').insert(data)
-  if (error) throw new Error(error.message)
-  
+  await supabase.from('tramites').insert(data)
   revalidatePath('/tramites')
   redirect('/tramites')
 }
 
-// NUEVA FUNCIÓN: ACTUALIZAR ESTADO DEL TRÁMITE
 export async function updateTramiteStatus(id: string, nuevoEstado: string) {
   const supabase = createClient()
-  const { error } = await supabase
-    .from('tramites')
-    .update({ estado: nuevoEstado })
-    .eq('id', id)
-
-  if (error) throw new Error(error.message)
-  revalidatePath('/tramites')
-  revalidatePath('/dashboard')
-}
-
-export async function signOut() {
-  const supabase = createClient()
-  await supabase.auth.signOut()
-  redirect('/login')
-}
-export async function updateTramiteObservacion(id: string, nota: string) {
-  const supabase = createClient()
-  const { error } = await supabase
-    .from('tramites')
-    .update({ observaciones: nota })
-    .eq('id', id)
-
-  if (error) throw new Error(error.message)
+  await supabase.from('tramites').update({ estado: nuevoEstado }).eq('id', id)
   revalidatePath('/tramites')
 }
-// FUNCIÓN PARA EDITAR TRÁMITE COMPLETO
+
+export async function deleteTramite(id: string) {
+  const supabase = createClient()
+  await supabase.from('tramites').delete().eq('id', id)
+  revalidatePath('/tramites')
+}
+
 export async function updateTramite(formData: FormData) {
   const supabase = createClient()
   const id = formData.get('id') as string
-  
   const data = {
     cliente_id: formData.get('cliente_id') as string,
     tipo_tramite: formData.get('tipo_tramite') as string,
     fecha_vencimiento: formData.get('fecha_vencimiento') as string || null,
     observaciones: formData.get('observaciones') as string
   }
-
-  const { error } = await supabase.from('tramites').update(data).eq('id', id)
-  if (error) throw new Error(error.message)
-  
+  await supabase.from('tramites').update(data).eq('id', id)
   revalidatePath('/tramites')
   redirect('/tramites')
 }
 
-// FUNCIÓN PARA BORRAR TRÁMITE
-export async function deleteTramite(formData: FormData) {
+export async function updateTramiteObservacion(id: string, nota: string) {
   const supabase = createClient()
-  const id = formData.get('id') as string
-  
-  const { error } = await supabase.from('tramites').delete().eq('id', id)
-  if (error) throw new Error(error.message)
-  
+  await supabase.from('tramites').update({ observaciones: nota }).eq('id', id)
   revalidatePath('/tramites')
-  revalidatePath('/dashboard')
+}
+
+export async function signOut() {
+  const supabase = createClient()
+  await supabase.auth.signOut()
+  redirect('/login')
 }
