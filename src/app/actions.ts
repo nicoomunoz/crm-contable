@@ -43,9 +43,17 @@ export async function createTramite(formData: FormData) {
   redirect('/tramites')
 }
 
-export async function updateTramiteStatus(id: string, nuevoEstado: string) {
+export async function updateTramiteStatus(formData: FormData) {
   const supabase = createClient()
-  await supabase.from('tramites').update({ estado: nuevoEstado }).eq('id', id)
+  const id = formData.get('id') as string
+  const nuevoEstado = formData.get('nuevoEstado') as string
+
+  const { error } = await supabase
+    .from('tramites')
+    .update({ estado: nuevoEstado })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
   revalidatePath('/tramites')
 }
 
