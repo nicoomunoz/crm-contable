@@ -28,13 +28,15 @@ export async function createCliente(formData: FormData) {
 export async function createTramite(formData: FormData) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const nombre = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Admin'
+  
   const data = {
     cliente_id: formData.get('cliente_id') as string,
     tipo_tramite: formData.get('tipo_tramite') as string,
     estado: 'pendiente',
     fecha_vencimiento: formData.get('fecha_vencimiento') as string || null,
     observaciones: formData.get('observaciones') as string,
-    creado_por: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Administrador'
+    creado_por: nombre
   }
   await supabase.from('tramites').insert(data)
   revalidatePath('/tramites')
@@ -60,20 +62,6 @@ export async function updateTramiteObservacion(id: string, nota: string) {
   const supabase = createClient()
   await supabase.from('tramites').update({ observaciones: nota }).eq('id', id)
   revalidatePath('/tramites')
-}
-
-export async function updateTramite(formData: FormData) {
-  const supabase = createClient()
-  const id = formData.get('id') as string
-  const data = {
-    cliente_id: formData.get('cliente_id') as string,
-    tipo_tramite: formData.get('tipo_tramite') as string,
-    fecha_vencimiento: formData.get('fecha_vencimiento') as string || null,
-    observaciones: formData.get('observaciones') as string
-  }
-  await supabase.from('tramites').update(data).eq('id', id)
-  revalidatePath('/tramites')
-  redirect('/tramites')
 }
 
 export async function signOut() {
