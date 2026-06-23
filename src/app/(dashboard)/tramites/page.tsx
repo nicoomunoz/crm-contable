@@ -2,136 +2,71 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
-import { updateTramiteStatus, deleteTramite } from '@/app/actions' // Agregamos deleteTramite
-import { Clock, CheckCircle2, MessageSquare, Calendar, Edit3, Trash2 } from 'lucide-react' // Agregamos iconos
+import { updateTramiteStatus, deleteTramite } from '@/app/actions'
+import { Clock, CheckCircle2, MessageSquare, Calendar, Edit3, Trash2 } from 'lucide-react'
 
 export default async function TramitesPage() {
   const supabase = createClient()
   
-  const { data: tramitesRaw } = await supabase
-    .from('tramites')
-    .select('*, clientes(razon_social)')
-    .order('created_at', { ascending: false })
+  // Realizamos las dos consultas por SEPARADO (Esto es lo más seguro contra errores de servidor)
+  const { data: rawTramites } = await supabase.from('tramites').select('*').order('created_at', { ascending: false })
+  const { data: rawClientes } = await supabase.from('clientes').select('id, razon_social')
 
-  const tramites = tramitesRaw || []
+  const tramites = rawTramites || []
+  const clientes = rawClientes || []
 
   return (
-    <div className="space-y-6 px-4">
-      <div className="flex justify-between items-end">
+    <div className="space-y-6 px-4 pb-20">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic">TRÁMITES</h1>
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1 italic border-l-2 border-blue-600 pl-2 leading-none">Estudio Contable</p>
+          <h1 className="text-3xl font-black italic tracking-tighter">TRÁMITES</h1>
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1 border-l-2 border-blue-600 pl-2 leading-none italic">Estudio Contable</p>
         </div>
-        <Link href="/tramites/nuevo" className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase shadow-xl hover:bg-blue-600 transition-all active:scale-95">
-          + Nuevo Trámite
+        <Link href="/tramites/nuevo" className="bg-slate-950 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase shadow-2xl hover:bg-blue-600 transition-all">
+          + Iniciar Nuevo
         </Link>
       </div>
 
-      <div className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-2xl">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50/50 border-b border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-            <tr>
-              <th className="px-8 py-6 text-xs uppercase">Cliente y Trámite</th>
-              <th className="px-8 py-6 text-center italic text-xs uppercase tracking-tighter text-xs">Responsable</th>
-              <th className="px-8 py-6 text-center uppercase tracking-tighter text-xs">Estado</th>
-              <th className="px-8 py-6 text-center uppercase text-xs font-bold tracking-widest">Gestión</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {tramites.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="text-center py-20 text-slate-400 font-bold uppercase text-xs italic tracking-widest">
-                  No hay trámites registrados aún
-                </td>
-              </tr>
-            ) : (
-              tramites.map((t: any) => (
-                <tr key={t.id} className="hover:bg-slate-50/50 transition-all group font-medium">
-                  <td className="px-8 py-6">
-                    <p className="text-blue-600 font-black text-[10px] uppercase mb-1 tracking-tighter leading-none italic font-bold">
-                      {t.clientes?.razon_social || 'ESTUDIO'}
-                    </p>
-                    <p className="text-slate-800 font-black text-xl tracking-tighter leading-none mb-1">
-                      {t.tipo_tramite || 'S/N'}
-                    </p>
-                    {t.fecha_vencimiento && (
-                      <div className="inline-flex items-center gap-1.5 text-red-500 text-[9px] font-black uppercase tracking-tighter italic border-t border-red-50 mt-1 pt-1 font-bold italic">
-                        <Calendar size={10} /> Vence: {t.fecha_vencimiento}
-                      </div>
-                    )}
-                  </td>
+      <div className="grid gap-4">
+        {tramites.map((t: any) => {
+          const cliente = clientes.find(c => c.id === t.cliente_id)?.razon_social || 'ESTUDIO'
 
-                  <td className="px-8 py-6 text-center">
-                      <div className="w-10 h-10 mx-auto rounded-full bg-slate-950 flex items-center justify-center text-[11px] font-black text-white italic border-4 border-white shadow-lg uppercase">
-                        {(t.creado_por || 'A').charAt(0)}
-                      </div>
-                  </td>
+          return (
+            <div key={t.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-50 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all hover:border-blue-100">
+              
+              {/* IZQUIERDA: CLIENTE / TRÁMITE */}
+              <div className="flex-1 space-y-1">
+                <p className="text-blue-600 font-black text-[10px] uppercase tracking-tighter italic leading-none">{cliente}</p>
+                <h3 className="text-2xl font-black text-slate-800 tracking-tighter leading-none my-1">{t.tipo_tramite || 'Trámite'}</h3>
+                {t.fecha_vencimiento && <p className="text-red-500 font-black text-[10px] uppercase tracking-tighter italic italic underline">Vence: {t.fecha_vencimiento}</p>}
+                <div className="flex gap-2 items-center text-slate-400 text-[10px] font-bold mt-2 italic uppercase">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center italic text-slate-600">{t.creado_por?.charAt(0) || 'A'}</span>
+                    <span>{t.creado_por || 'Administrador'}</span>
+                </div>
+              </div>
 
-                  <td className="px-8 py-6 text-center uppercase italic font-bold uppercase font-bold tracking-widest">
-                    <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border-2 ${
-                      t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500 border-orange-100/50' : 
-                      t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500 border-blue-100/50' : 
-                      'bg-emerald-50 text-emerald-600 border-emerald-100/50 italic uppercase font-black tracking-widest border-2'
-                    }`}>
-                      {t.estado}
-                    </span>
-                  </td>
+              {/* DERECHA: GESTIÓN */}
+              <div className="flex flex-wrap items-center gap-4">
+                 
+                 <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                   t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500 border-orange-100' : 
+                   t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500 border-blue-100' : 
+                   'bg-emerald-50 text-emerald-500 border-emerald-100 font-black tracking-widest'
+                 }`}>
+                   {t.estado}
+                 </span>
 
-                  <td className="px-8 py-6">
-                    <div className="flex gap-1 justify-center items-center">
-                      {/* ESTADOS */}
-                      <form action={updateTramiteStatus}>
-                         <input type="hidden" name="id" value={t.id} />
-                         <input type="hidden" name="nuevoEstado" value="en_proceso" />
-                         <button className="h-8 w-8 flex items-center justify-center bg-white rounded-lg text-slate-300 hover:text-blue-600 border border-slate-100 shadow-sm transition">
-                            <Clock size={15} />
-                         </button>
-                      </form>
+                 <div className="flex items-center gap-2 p-1.5 bg-slate-50 border rounded-2xl">
+                    <form action={updateTramiteStatus}>
+                       <input type="hidden" name="id" value={t.id} />
+                       <input type="hidden" name="nuevoEstado" value="en_proceso" />
+                       <button className="h-9 w-9 bg-white text-slate-300 hover:text-blue-600 rounded-xl flex items-center justify-center transition shadow-sm active:scale-90 italic"><Clock size={16} /></button>
+                    </form>
+                    <form action={updateTramiteStatus}>
+                       <input type="hidden" name="id" value={t.id} />
+                       <input type="hidden" name="nuevoEstado" value="finalizado" />
+                       <button className="h-9 w-9 bg-white text-slate-300 hover:text-emerald-600 rounded-xl flex items-center justify-center transition shadow-sm active:scale-90 italic"><CheckCircle2 size={16} /></button>
+                    </form>
+                 </div>
 
-                      <form action={updateTramiteStatus}>
-                         <input type="hidden" name="id" value={t.id} />
-                         <input type="hidden" name="nuevoEstado" value="finalizado" />
-                         <button className="h-8 w-8 flex items-center justify-center bg-white rounded-xl text-slate-300 hover:text-emerald-500 border border-slate-100 shadow-sm transition italic">
-                            <CheckCircle2 size={15} />
-                         </button>
-                      </form>
-                      
-                      {/* NOTAS */}
-                      <Link 
-                        href={`/tramites/actualizar-nota?id=${t.id}`}
-                        className="h-8 w-8 flex items-center justify-center bg-slate-50 rounded-xl text-slate-300 hover:text-blue-600 transition"
-                      >
-                         <MessageSquare size={15} />
-                      </Link>
-
-                      {/* --- NUEVO: BOTON EDITAR --- */}
-                      <Link 
-                        href={`/tramites/editar?id=${t.id}`}
-                        className="h-8 w-8 flex items-center justify-center bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition shadow-sm border border-slate-50"
-                      >
-                         <Edit3 size={15} />
-                      </Link>
-
-                      {/* --- NUEVO: BOTON BORRAR --- */}
-                      <form action={deleteTramite}>
-                        <input type="hidden" name="id" value={t.id} />
-                        <button 
-                           type="submit"
-                           className="h-8 w-8 flex items-center justify-center bg-red-50 rounded-xl text-red-200 hover:bg-red-500 hover:text-white transition active:scale-95 border border-red-50"
-                           onClick={(e) => { if(!confirm("¿Borrar trámite definitivamente?")) e.preventDefault() }}
-                        >
-                           <Trash2 size={15} />
-                        </button>
-                      </form>
-
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
+                 <div cla
