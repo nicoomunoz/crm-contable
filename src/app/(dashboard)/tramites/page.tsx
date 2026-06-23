@@ -2,13 +2,13 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
-import { updateTramiteStatus } from '@/app/actions'
-import { Clock, CheckCircle2, MessageSquare, Calendar } from 'lucide-react'
+import { updateTramiteStatus, deleteTramite } from '@/app/actions' // Añadido deleteTramite
+import { Clock, CheckCircle2, MessageSquare, Calendar, Edit3, Trash2 } from 'lucide-react' // Añadidos iconos
 
 export default async function TramitesPage() {
   const supabase = createClient()
   
-  // Realizamos la consulta. Si no hay datos, inicializamos como array vacío
+  // Realizamos la consulta estable
   const { data: tramitesRaw } = await supabase
     .from('tramites')
     .select('*, clientes(razon_social)')
@@ -35,7 +35,7 @@ export default async function TramitesPage() {
               <th className="px-8 py-6">Cliente y Trámite</th>
               <th className="px-8 py-6 text-center italic text-xs uppercase tracking-tighter">Responsable</th>
               <th className="px-8 py-6 text-center uppercase tracking-tighter text-xs">Estado</th>
-              <th className="px-8 py-6 text-center uppercase text-xs">Cambiar</th>
+              <th className="px-8 py-6 text-center uppercase text-xs">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -79,29 +79,53 @@ export default async function TramitesPage() {
                   </td>
 
                   <td className="px-8 py-6">
-                    <div className="flex gap-2 justify-center">
+                    <div className="flex gap-2 justify-center items-center">
+                      {/* BOTONES DE ESTADO RÁPIDO */}
                       <form action={updateTramiteStatus}>
                          <input type="hidden" name="id" value={t.id} />
                          <input type="hidden" name="nuevoEstado" value="en_proceso" />
-                         <button className="h-9 w-9 flex items-center justify-center bg-white rounded-xl text-slate-300 hover:text-blue-600 hover:scale-110 border border-slate-100 shadow-sm transition active:scale-90">
-                            <Clock size={16} />
+                         <button className="h-8 w-8 flex items-center justify-center bg-white rounded-xl text-slate-300 hover:text-blue-600 hover:scale-110 border border-slate-100 shadow-sm transition active:scale-90">
+                            <Clock size={15} />
                          </button>
                       </form>
 
                       <form action={updateTramiteStatus}>
                          <input type="hidden" name="id" value={t.id} />
                          <input type="hidden" name="nuevoEstado" value="finalizado" />
-                         <button className="h-9 w-9 flex items-center justify-center bg-white rounded-xl text-slate-300 hover:text-emerald-500 hover:scale-110 border border-slate-100 shadow-sm transition active:scale-90 italic">
-                            <CheckCircle2 size={16} />
+                         <button className="h-8 w-8 flex items-center justify-center bg-white rounded-xl text-slate-300 hover:text-emerald-500 hover:scale-110 border border-slate-100 shadow-sm transition active:scale-90 italic">
+                            <CheckCircle2 size={15} />
                          </button>
                       </form>
                       
+                      {/* NOTAS */}
                       <Link 
                         href={`/tramites/actualizar-nota?id=${t.id}`}
-                        className="h-9 w-9 flex items-center justify-center bg-slate-50 rounded-xl text-slate-300 hover:text-slate-900 transition active:scale-90 italic"
+                        className="h-8 w-8 flex items-center justify-center bg-slate-50 rounded-xl text-slate-300 hover:text-slate-900 transition active:scale-90 italic"
                       >
-                         <MessageSquare size={16} />
+                         <MessageSquare size={15} />
                       </Link>
+
+                      {/* EDITAR (NUEVO) */}
+                      <Link 
+                        href={`/tramites/editar?id=${t.id}`}
+                        className="h-8 w-8 flex items-center justify-center bg-slate-100 rounded-xl text-slate-500 hover:bg-slate-800 hover:text-white transition active:scale-90"
+                        title="Editar trámite"
+                      >
+                         <Edit3 size={15} />
+                      </Link>
+
+                      {/* BORRAR (NUEVO) */}
+                      <form action={deleteTramite}>
+                        <input type="hidden" name="id" value={t.id} />
+                        <button 
+                           type="submit"
+                           className="h-8 w-8 flex items-center justify-center bg-red-50 rounded-xl text-red-200 hover:bg-red-500 hover:text-white transition border border-red-100 active:scale-90 shadow-sm"
+                           onClick={(e) => {if(!confirm("¿Borrar definitivamente este trámite?")) e.preventDefault()}}
+                           title="Borrar"
+                        >
+                           <Trash2 size={15} />
+                        </button>
+                      </form>
                     </div>
                   </td>
                 </tr>
