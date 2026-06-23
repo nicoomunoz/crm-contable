@@ -1,14 +1,15 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { updateTramiteStatus, updateTramiteObservacion, deleteTramite } from '@/app/actions'
-import { Clock, CheckCircle2, Calendar, MoreHorizontal, Pencil, Trash2, Check, X, Circle } from 'lucide-react'
+import { updateTramiteStatus, deleteTramite, createComentario } from '@/app/actions'
+import { Clock, CheckCircle2, Calendar, MoreHorizontal, Pencil, Trash2, Circle } from 'lucide-react'
 
 export default function TramitesTable({ tramites }: { tramites: any[] }) {
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null)
-  const [editandoNota, setEditandoNota] = useState<string | null>(null)
-  const [notaTemp, setNotaTemp] = useState('')
   const menuRef = useRef<HTMLTableCellElement>(null)
+  const [comentariosAbiertos, setComentariosAbiertos] = useState<string | null>(null)
+  const [comentariosTramite, setComentariosTramite] = useState<Record<string, any[]>>({})
+  const [nuevoComentario, setNuevoComentario] = useState('')
 
   // Cerrar menú al hacer click afuera
   useEffect(() => {
@@ -21,14 +22,12 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  function iniciarEditNota(t: any) {
-    setEditandoNota(t.id)
-    setNotaTemp(t.observaciones || '')
-  }
 
-  async function guardarNota(id: string) {
-    await updateTramiteObservacion(id, notaTemp)
-    setEditandoNota(null)
+  async function cargarComentarios(tramiteId: string) {
+  const res = await fetch(`/api/comentarios?tramite_id=${tramiteId}`)
+  const data = await res.json()
+  setComentariosTramite(prev => ({ ...prev, [tramiteId]: data }))
+  setComentariosAbiertos(tramiteId)
   }
 
   return (
@@ -78,39 +77,49 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
                 </td>
 
                 {/* Observaciones — editable inline */}
+                {/* Comentarios */}
                 <td className="px-8 py-6 max-w-[220px]">
-                  {editandoNota === t.id ? (
-                    <div className="flex flex-col gap-2">
-                      <textarea
-                        className="text-xs text-slate-700 border border-blue-200 rounded-xl p-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
-                        rows={3}
-                        value={notaTemp}
-                        onChange={e => setNotaTemp(e.target.value)}
-                        autoFocus
-                      />
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => guardarNota(t.id)}
-                          className="flex items-center gap-1 px-2 py-1 bg-emerald-500 text-white rounded-lg text-[10px] font-black hover:bg-emerald-600 transition"
-                        >
-                          <Check size={10} /> Guardar
-                        </button>
-                        <button
-                          onClick={() => setEditandoNota(null)}
-                          className="flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black hover:bg-slate-200 transition"
-                        >
-                          <X size={10} /> Cancelar
-                        </button>
+                  {comentariosAbiertos === t.id ? (
+                    <div className="space-y-2">
+                      <div className="max-h-40 overflow-y-auto space-y-2">
+                        {(comentariosTramite[t.id] || []).length === 0 && (
+                          <p className="text-[10px] text-slate-300 italic">Sin comentarios aún</p>
+                        )}
+                        {(comentariosTramite[t.id] || []).map((c: any) => (
+                          <div key={c.id} className="bg-slate-50 rounded-xl px-3 py-2">
+                            <p className="text-[10px] font-black text-blue-500 uppercase">{c.autor}</p>
+                            <p className="text-xs text-slate-600">{c.contenido}</p>
+                            <p className="text-[9px] text-slate-300 mt-1">{new Date(c.created_at).toLocaleString('es-AR')}</p>
+                          </div>
+                        ))}
                       </div>
+                      <form action={createComentario} onSubmit={() => { setComentariosAbiertos(null); setNuevoComentario('') }}>
+                        <input type="hidden" name="tramite_id" value={t.id} />
+                        <textarea
+                          name="contenido"
+                          rows={2}
+                          value={nuevoComentario}
+                          onChange={e => setNuevoComentario(e.target.value)}
+                          placeholder="Escribir comentario..."
+                          className="w-full text-xs border border-slate-200 rounded-xl p-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                        <div className="flex gap-1 mt-1">
+                          <button type="submit" className="px-3 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-black hover:bg-blue-700 transition">
+                            Enviar
+                          </button>
+                          <button type="button" onClick={() => setComentariosAbiertos(null)} className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black hover:bg-slate-200 transition">
+                            Cerrar
+                          </button>
+                        </div>
+                      </form>
                     </div>
                   ) : (
-                    <p
-                      onClick={() => iniciarEditNota(t)}
-                      className="text-xs text-slate-500 cursor-pointer hover:text-slate-800 transition min-h-[32px] italic"
-                      title="Click para editar"
+                    <button
+                      onClick={() => cargarComentarios(t.id)}
+                      className="text-xs text-slate-400 italic hover:text-blue-500 transition"
                     >
-                      {t.observaciones || <span className="text-slate-300">Sin observaciones...</span>}
-                    </p>
+                      Ver comentarios...
+                    </button>
                   )}
                 </td>
 
