@@ -3,150 +3,82 @@ import { createClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-/**
- * --- SISTEMA DE AUTENTICACIÓN ---
- */
-
-// Iniciar Sesión
 export async function login(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const supabase = createClient()
-  
   const { error } = await supabase.auth.signInWithPassword({ email, password })
-  
   if (error) redirect('/login?error=true')
-  
   redirect('/dashboard')
 }
 
-// Cerrar Sesión
-export async function signOut() {
-  const supabase = createClient()
-  await supabase.auth.signOut()
-  redirect('/login')
-}
-
-
-/**
- * --- GESTIÓN DE CLIENTES ---
- */
-
-// Crear Cliente
 export async function createCliente(formData: FormData) {
   const supabase = createClient()
-  
   const data = {
     razon_social: formData.get('razon_social') as string,
     cuit: formData.get('cuit') as string,
     email: formData.get('email') as string,
-    telefono: formData.get('telefono') as string,
-    direccion: formData.get('direccion') as string,
+    telefono: formData.get('telefono') as string
   }
-
-  const { error } = await supabase.from('clientes').insert(data)
-  
-  if (error) throw new Error(error.message)
-  
+  await supabase.from('clientes').insert(data)
   revalidatePath('/clientes')
   redirect('/clientes')
 }
 
-
-/**
- * --- GESTIÓN DE TRÁMITES ---
- */
-
-// Crear Trámite (Con trazabilidad de nombre de usuario)
 export async function createTramite(formData: FormData) {
   const supabase = createClient()
-  
-  // Obtener al usuario logueado para registrar quién crea el trámite
   const { data: { user } } = await supabase.auth.getUser()
-  const nombreResponsable = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Administrador'
-  
+  const nombre = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Admin'
   const data = {
     cliente_id: formData.get('cliente_id') as string,
     tipo_tramite: formData.get('tipo_tramite') as string,
     estado: 'pendiente',
     fecha_vencimiento: formData.get('fecha_vencimiento') as string || null,
     observaciones: formData.get('observaciones') as string,
-    creado_por: nombreResponsable
+    creado_por: nombre
   }
-
-  const { error } = await supabase.from('tramites').insert(data)
-  
-  if (error) throw new Error(error.message)
-  
+  await supabase.from('tramites').insert(data)
   revalidatePath('/tramites')
-  revalidatePath('/dashboard')
   redirect('/tramites')
 }
 
-// Actualizar Estado (Usado en los botones de la tabla)
 export async function updateTramiteStatus(formData: FormData) {
   const supabase = createClient()
   const id = formData.get('id') as string
   const nuevoEstado = formData.get('nuevoEstado') as string
-
-  const { error } = await supabase
-    .from('tramites')
-    .update({ estado: nuevoEstado })
-    .eq('id', id)
-
-  if (error) throw new Error(error.message)
-  
+  await supabase.from('tramites').update({ estado: nuevoEstado }).eq('id', id)
   revalidatePath('/tramites')
-  revalidatePath('/dashboard')
 }
 
-// Actualizar Observación / Nota (Usado en la pantalla de la nubecita)
-export async function updateTramiteObservacion(id: string, nota: string) {
+export async function deleteTramite(formData: FormData) {
   const supabase = createClient()
-  
-  const { error } = await supabase
-    .from('tramites')
-    .update({ observaciones: nota })
-    .eq('id', id)
-
-  if (error) throw new Error(error.message)
-  
+  const id = formData.get('id') as string
+  await supabase.from('tramites').delete().eq('id', id)
   revalidatePath('/tramites')
 }
 
-// Editar Trámite Completo (Formulario de edición)
 export async function updateTramite(formData: FormData) {
   const supabase = createClient()
   const id = formData.get('id') as string
-  
   const data = {
     cliente_id: formData.get('cliente_id') as string,
     tipo_tramite: formData.get('tipo_tramite') as string,
     fecha_vencimiento: formData.get('fecha_vencimiento') as string || null,
-    observaciones: formData.get('observaciones') as string,
+    observaciones: formData.get('observaciones') as string
   }
-
-  const { error } = await supabase.from('tramites').update(data).eq('id', id)
-  
-  if (error) throw new Error(error.message)
-  
+  await supabase.from('tramites').update(data).eq('id', id)
   revalidatePath('/tramites')
-  revalidatePath('/dashboard')
   redirect('/tramites')
 }
 
-// Borrar Trámite
-export async function deleteTramite(formData: FormData) {
+export async function updateTramiteObservacion(id: string, nota: string) {
   const supabase = createClient()
-  const id = formData.get('id') as string
-
-  const { error } = await supabase
-    .from('tramites')
-    .delete()
-    .eq('id', id)
-
-  if (error) throw new Error(error.message)
-  
+  await supabase.from('tramites').update({ observaciones: nota }).eq('id', id)
   revalidatePath('/tramites')
-  revalidatePath('/dashboard')
+}
+
+export async function signOut() {
+  const supabase = createClient()
+  await supabase.auth.signOut()
+  redirect('/login')
 }
