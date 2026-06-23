@@ -72,9 +72,9 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
 
                 {/* Responsable */}
                 <td className="px-8 py-6">
-                  <div className="w-10 h-10 mx-auto rounded-full bg-slate-950 flex items-center justify-center text-[11px] font-black text-white italic border-4 border-white shadow-lg">
-                    {(t.creado_por || 'A').charAt(0)}
-                  </div>
+                  <p className="text-center text-xs font-black text-slate-700 uppercase tracking-tight">
+                    {t.creado_por || 'Administrador'}
+                  </p>
                 </td>
 
                 {/* Observaciones — editable inline */}
