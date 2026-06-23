@@ -24,7 +24,7 @@ export default async function EditarTramitePage({ searchParams }: { searchParams
     .select('id, razon_social')
     .order('razon_social')
 
-return (
+  return (
     <div className="max-w-xl mx-auto space-y-6 px-4">
       <div>
         <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic">EDITAR TRÁMITE</h1>
