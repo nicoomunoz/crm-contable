@@ -150,3 +150,20 @@ export async function deleteTramite(formData: FormData) {
   revalidatePath('/tramites')
   revalidatePath('/dashboard')
 }
+export async function createComentario(formData: FormData) {
+  const supabase = createClient()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  const autor = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Anónimo'
+  
+  const data = {
+    tramite_id: formData.get('tramite_id') as string,
+    contenido: formData.get('contenido') as string,
+    autor,
+  }
+
+  const { error } = await supabase.from('comentarios').insert(data)
+  if (error) throw new Error(error.message)
+  
+  revalidatePath('/tramites')
+}
