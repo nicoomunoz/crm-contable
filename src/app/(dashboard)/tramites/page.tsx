@@ -2,13 +2,11 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
-import { updateTramiteStatus } from '@/app/actions'
-import { Clock, CheckCircle2, MessageSquare, Calendar } from 'lucide-react'
+import TramitesTable from './TramitesTable'
 
 export default async function TramitesPage() {
   const supabase = createClient()
-  
-  // Realizamos la consulta. Si no hay datos, inicializamos como array vacío
+
   const { data: tramitesRaw } = await supabase
     .from('tramites')
     .select('*, clientes(razon_social)')
@@ -28,88 +26,7 @@ export default async function TramitesPage() {
         </Link>
       </div>
 
-      <div className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-2xl">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50/50 border-b border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-            <tr>
-              <th className="px-8 py-6">Cliente y Trámite</th>
-              <th className="px-8 py-6 text-center italic text-xs uppercase tracking-tighter">Responsable</th>
-              <th className="px-8 py-6 text-center uppercase tracking-tighter text-xs">Estado</th>
-              <th className="px-8 py-6 text-center uppercase text-xs">Cambiar</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {tramites.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="text-center py-20 text-slate-400 font-bold uppercase text-xs italic tracking-widest">
-                  No hay trámites registrados aún
-                </td>
-              </tr>
-            ) : (
-              tramites.map((t: any) => (
-                <tr key={t.id} className="hover:bg-slate-50/50 transition-all group">
-                  <td className="px-8 py-6">
-                    <p className="text-blue-600 font-black text-[10px] uppercase mb-1 tracking-tighter leading-none italic font-bold">
-                      {t.clientes?.razon_social || 'ESTUDIO'}
-                    </p>
-                    <p className="text-slate-800 font-black text-xl tracking-tighter leading-none mb-1">
-                      {t.tipo_tramite || 'S/N'}
-                    </p>
-                    {t.fecha_vencimiento && (
-                      <div className="inline-flex items-center gap-1.5 text-red-500 text-[9px] font-black uppercase tracking-tighter italic border-t border-red-50 mt-1 pt-1">
-                        <Calendar size={10} /> Vence: {t.fecha_vencimiento}
-                      </div>
-                    )}
-                  </td>
-
-                  <td className="px-8 py-6">
-                      <div className="w-10 h-10 mx-auto rounded-full bg-slate-950 flex items-center justify-center text-[11px] font-black text-white italic border-4 border-white shadow-lg">
-                        {(t.creado_por || 'A').charAt(0)}
-                      </div>
-                  </td>
-
-                  <td className="px-8 py-6 text-center uppercase italic font-bold">
-                    <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border-2 ${
-                      t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500 border-orange-100/50' : 
-                      t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500 border-blue-100/50' : 
-                      'bg-emerald-50 text-emerald-600 border-emerald-100/50 italic uppercase font-black tracking-widest border-2'
-                    }`}>
-                      {t.estado}
-                    </span>
-                  </td>
-
-                  <td className="px-8 py-6">
-                    <div className="flex gap-2 justify-center">
-                      <form action={updateTramiteStatus}>
-                         <input type="hidden" name="id" value={t.id} />
-                         <input type="hidden" name="nuevoEstado" value="en_proceso" />
-                         <button className="h-9 w-9 flex items-center justify-center bg-white rounded-xl text-slate-300 hover:text-blue-600 hover:scale-110 border border-slate-100 shadow-sm transition active:scale-90">
-                            <Clock size={16} />
-                         </button>
-                      </form>
-
-                      <form action={updateTramiteStatus}>
-                         <input type="hidden" name="id" value={t.id} />
-                         <input type="hidden" name="nuevoEstado" value="finalizado" />
-                         <button className="h-9 w-9 flex items-center justify-center bg-white rounded-xl text-slate-300 hover:text-emerald-500 hover:scale-110 border border-slate-100 shadow-sm transition active:scale-90 italic">
-                            <CheckCircle2 size={16} />
-                         </button>
-                      </form>
-                      
-                      <Link 
-                        href={`/tramites/actualizar-nota?id=${t.id}`}
-                        className="h-9 w-9 flex items-center justify-center bg-slate-50 rounded-xl text-slate-300 hover:text-slate-900 transition active:scale-90 italic"
-                      >
-                         <MessageSquare size={16} />
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <TramitesTable tramites={tramites} />
     </div>
   )
 }
