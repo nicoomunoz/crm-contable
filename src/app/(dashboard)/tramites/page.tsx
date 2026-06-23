@@ -2,8 +2,8 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
-import { updateTramiteStatus } from '@/app/actions'
-import { Clock, CheckCircle2, MessageSquare, Calendar } from 'lucide-react'
+import { updateTramiteStatus, deleteTramite } from '@/app/actions' // Agregué deleteTramite aquí
+import { Clock, CheckCircle2, MessageSquare, Calendar, Edit3, Trash2 } from 'lucide-react' // Agregué los iconos
 
 export default async function TramitesPage() {
   const supabase = createClient()
@@ -35,7 +35,7 @@ export default async function TramitesPage() {
               <th className="px-8 py-6">Cliente y Trámite</th>
               <th className="px-8 py-6 text-center italic text-xs uppercase tracking-tighter">Responsable</th>
               <th className="px-8 py-6 text-center uppercase tracking-tighter text-xs">Estado</th>
-              <th className="px-8 py-6 text-center uppercase text-xs">Cambiar</th>
+              <th className="px-8 py-6 text-center uppercase text-xs">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -79,7 +79,7 @@ export default async function TramitesPage() {
                   </td>
 
                   <td className="px-8 py-6">
-                    <div className="flex gap-2 justify-center">
+                    <div className="flex gap-2 justify-center items-center">
                       <form action={updateTramiteStatus}>
                          <input type="hidden" name="id" value={t.id} />
                          <input type="hidden" name="nuevoEstado" value="en_proceso" />
@@ -98,10 +98,30 @@ export default async function TramitesPage() {
                       
                       <Link 
                         href={`/tramites/actualizar-nota?id=${t.id}`}
-                        className="h-9 w-9 flex items-center justify-center bg-slate-50 rounded-xl text-slate-300 hover:text-slate-900 transition active:scale-90 italic"
+                        className="h-9 w-9 flex items-center justify-center bg-slate-50 rounded-xl text-slate-300 hover:text-blue-600 transition active:scale-90 italic"
                       >
                          <MessageSquare size={16} />
                       </Link>
+
+                      {/* --- NUEVO: EDITAR --- */}
+                      <Link 
+                        href={`/tramites/editar?id=${t.id}`}
+                        className="h-9 w-9 flex items-center justify-center bg-slate-50 rounded-xl text-slate-300 hover:text-slate-950 transition active:scale-90 italic"
+                      >
+                         <Edit3 size={16} />
+                      </Link>
+
+                      {/* --- NUEVO: BORRAR --- */}
+                      <form action={deleteTramite}>
+                        <input type="hidden" name="id" value={t.id} />
+                        <button 
+                           type="submit"
+                           className="h-9 w-9 flex items-center justify-center bg-red-50 rounded-xl text-red-200 hover:text-red-500 border border-red-100 transition active:scale-90 shadow-sm"
+                           onClick={(e) => {if(!confirm("¿Borrar definitivo?")) e.preventDefault()}}
+                        >
+                           <Trash2 size={16} />
+                        </button>
+                      </form>
                     </div>
                   </td>
                 </tr>
