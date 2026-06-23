@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { updateTramiteStatus, updateTramiteObservacion, deleteTramite } from '@/app/actions'
-import { Clock, CheckCircle2, Calendar, MoreHorizontal, Pencil, Trash2, Check, X } from 'lucide-react'
+import { Clock, CheckCircle2, Calendar, MoreHorizontal, Pencil, Trash2, Check, X, Circle } from 'lucide-react'
 
 export default function TramitesTable({ tramites }: { tramites: any[] }) {
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null)
@@ -137,6 +137,13 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
                     </form>
                     <form action={updateTramiteStatus}>
                       <input type="hidden" name="id" value={t.id} />
+                      <input type="hidden" name="nuevoEstado" value="pendiente" />
+                      <button className="h-9 w-9 flex items-center justify-center bg-white rounded-xl text-slate-300 hover:text-orange-400 hover:scale-110 border border-slate-100 shadow-sm transition active:scale-90">
+                        <Circle size={16} />
+                      </button>
+                    </form>
+                    <form action={updateTramiteStatus}>
+                      <input type="hidden" name="id" value={t.id} />
                       <input type="hidden" name="nuevoEstado" value="finalizado" />
                       <button className="h-9 w-9 flex items-center justify-center bg-white rounded-xl text-slate-300 hover:text-emerald-500 hover:scale-110 border border-slate-100 shadow-sm transition active:scale-90">
                         <CheckCircle2 size={16} />
@@ -166,9 +173,14 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
                       <form action={deleteTramite}>
                         <input type="hidden" name="id" value={t.id} />
                         <button
-                          type="submit"
+                          type="button"
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-black text-red-500 hover:bg-red-50 transition uppercase tracking-wide"
-                          onClick={() => setMenuAbierto(null)}
+                          onClick={async () => {
+                            setMenuAbierto(null)
+                            const formData = new FormData()
+                            formData.append('id', t.id)
+                            await deleteTramite(formData)
+                          }}
                         >
                           <Trash2 size={13} /> Borrar
                         </button>
