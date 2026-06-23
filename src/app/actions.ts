@@ -12,6 +12,12 @@ export async function login(formData: FormData) {
   redirect('/dashboard')
 }
 
+export async function signOut() {
+  const supabase = createClient()
+  await supabase.auth.signOut()
+  redirect('/login')
+}
+
 export async function createCliente(formData: FormData) {
   const supabase = createClient()
   const data = {
@@ -48,6 +54,7 @@ export async function updateTramiteStatus(formData: FormData) {
   const nuevoEstado = formData.get('nuevoEstado') as string
   await supabase.from('tramites').update({ estado: nuevoEstado }).eq('id', id)
   revalidatePath('/tramites')
+  revalidatePath('/dashboard')
 }
 
 export async function deleteTramite(formData: FormData) {
@@ -55,6 +62,7 @@ export async function deleteTramite(formData: FormData) {
   const id = formData.get('id') as string
   await supabase.from('tramites').delete().eq('id', id)
   revalidatePath('/tramites')
+  revalidatePath('/dashboard')
 }
 
 export async function updateTramite(formData: FormData) {
@@ -75,10 +83,4 @@ export async function updateTramiteObservacion(id: string, nota: string) {
   const supabase = createClient()
   await supabase.from('tramites').update({ observaciones: nota }).eq('id', id)
   revalidatePath('/tramites')
-}
-
-export async function signOut() {
-  const supabase = createClient()
-  await supabase.auth.signOut()
-  redirect('/login')
 }
