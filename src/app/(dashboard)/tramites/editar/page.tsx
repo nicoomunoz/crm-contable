@@ -4,12 +4,13 @@ import React from 'react'
 import { createClient } from '@/lib/supabase'
 import { updateTramite } from '@/app/actions'
 import { redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 
 export default async function EditarTramitePage({ searchParams }: { searchParams: { id: string } }) {
   const supabase = createClient()
   const id = searchParams.id
 
-  if (!id) redirect('/tramites')
+  if (!id) return redirect('/tramites')
 
   const { data: tramite } = await supabase
     .from('tramites')
@@ -17,7 +18,7 @@ export default async function EditarTramitePage({ searchParams }: { searchParams
     .eq('id', id)
     .single()
 
-  if (!tramite) redirect('/tramites')
+  if (!tramite) return redirect('/tramites')
 
   const { data: clientes } = await supabase
     .from('clientes')
