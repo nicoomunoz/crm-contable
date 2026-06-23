@@ -8,7 +8,7 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null)
   const [editandoNota, setEditandoNota] = useState<string | null>(null)
   const [notaTemp, setNotaTemp] = useState('')
-  const menuRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLTableCellElement>(null)
 
   // Cerrar menú al hacer click afuera
   useEffect(() => {
