@@ -6,7 +6,10 @@ import { User, Search, Trash2, ArrowRight } from 'lucide-react'
 
 export default async function ClientesPage() {
   const supabase = createClient()
-  const { data: clientes } = await supabase.from('clientes').select('*').order('razon_social')
+  const { data: clientes, error } = await supabase
+    .from('clientes')
+    .select('id, razon_social, cuit, email, telefono, direccion, notas')
+    .order('razon_social')
 
   return (
     <div className="space-y-6">
