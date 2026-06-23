@@ -2,79 +2,113 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
-import { updateTramiteStatus, deleteTramite } from '@/app/actions'
-import { Clock, CheckCircle2, MessageSquare, Trash2, Calendar } from 'lucide-react'
+import { updateTramiteStatus } from '@/app/actions'
+import { Clock, CheckCircle2, MessageSquare, Calendar } from 'lucide-react'
 
 export default async function TramitesPage() {
   const supabase = createClient()
-  const [tramitesRes, clientesRes] = await Promise.all([
-    supabase.from('tramites').select('*').order('created_at', { ascending: false }),
-    supabase.from('clientes').select('id, razon_social')
-  ])
+  
+  // Realizamos la consulta. Si no hay datos, inicializamos como array vacío
+  const { data: tramitesRaw } = await supabase
+    .from('tramites')
+    .select('*, clientes(razon_social)')
+    .order('created_at', { ascending: false })
 
-  const tramites = tramitesRes.data || []
-  const clientes = clientesRes.data || []
+  const tramites = tramitesRaw || []
 
   return (
     <div className="space-y-6 px-4">
-      <div className="flex justify-between items-center mb-8 bg-white p-8 rounded-3xl shadow-sm border border-slate-50">
+      <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-black italic tracking-tighter">TRÁMITES</h1>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Control del estudio</p>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic">TRÁMITES</h1>
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1 italic border-l-2 border-blue-600 pl-2 leading-none">Estudio Contable</p>
         </div>
-        <Link href="/tramites/nuevo" className="bg-slate-950 text-white px-8 py-3 rounded-2xl font-black text-[11px] uppercase shadow-xl hover:bg-blue-600 transition-all">
-          + Iniciar Nuevo
+        <Link href="/tramites/nuevo" className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase shadow-xl hover:bg-blue-600 transition-all active:scale-95">
+          + Nuevo Trámite
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 mt-6">
-        {tramites.map((t) => {
-          const nombreCliente = clientes.find((c) => c.id === t.cliente_id)?.razon_social || 'ESTUDIO'
-          return (
-            <div key={t.id} className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all hover:border-blue-300">
-              
-              <div className="flex-1 space-y-1">
-                <p className="text-blue-600 font-black text-[10px] uppercase mb-1">{nombreCliente}</p>
-                <h3 className="text-xl font-black text-slate-900 tracking-tighter italic uppercase">{t.tipo_tramite}</h3>
-                <div className="flex gap-4 mt-2">
-                    {t.fecha_vencimiento && <span className="text-red-500 font-black text-[9px] uppercase italic border-b-2 border-red-50"><Calendar size={10} className="inline mr-1"/>Vence: {t.fecha_vencimiento}</span>}
-                    <span className="text-slate-300 font-bold text-[8px] uppercase tracking-widest uppercase">Autor: {t.creado_por || 'S'}</span>
-                </div>
-              </div>
+      <div className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-2xl">
+        <table className="w-full text-left">
+          <thead className="bg-slate-50/50 border-b border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+            <tr>
+              <th className="px-8 py-6">Cliente y Trámite</th>
+              <th className="px-8 py-6 text-center italic text-xs uppercase tracking-tighter">Responsable</th>
+              <th className="px-8 py-6 text-center uppercase tracking-tighter text-xs">Estado</th>
+              <th className="px-8 py-6 text-center uppercase text-xs">Cambiar</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {tramites.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="text-center py-20 text-slate-400 font-bold uppercase text-xs italic tracking-widest">
+                  No hay trámites registrados aún
+                </td>
+              </tr>
+            ) : (
+              tramites.map((t: any) => (
+                <tr key={t.id} className="hover:bg-slate-50/50 transition-all group">
+                  <td className="px-8 py-6">
+                    <p className="text-blue-600 font-black text-[10px] uppercase mb-1 tracking-tighter leading-none italic font-bold">
+                      {t.clientes?.razon_social || 'ESTUDIO'}
+                    </p>
+                    <p className="text-slate-800 font-black text-xl tracking-tighter leading-none mb-1">
+                      {t.tipo_tramite || 'S/N'}
+                    </p>
+                    {t.fecha_vencimiento && (
+                      <div className="inline-flex items-center gap-1.5 text-red-500 text-[9px] font-black uppercase tracking-tighter italic border-t border-red-50 mt-1 pt-1">
+                        <Calendar size={10} /> Vence: {t.fecha_vencimiento}
+                      </div>
+                    )}
+                  </td>
 
-              <div className="flex flex-wrap items-center gap-6">
-                <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border-2 shadow-sm ${
-                    t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500 border-orange-100' : 
-                    t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500 border-blue-100' : 
-                    'bg-emerald-50 text-emerald-600 border-emerald-100 font-black uppercase italic'
-                }`}>
-                    {t.estado}
-                </span>
+                  <td className="px-8 py-6">
+                      <div className="w-10 h-10 mx-auto rounded-full bg-slate-950 flex items-center justify-center text-[11px] font-black text-white italic border-4 border-white shadow-lg">
+                        {(t.creado_por || 'A').charAt(0)}
+                      </div>
+                  </td>
 
-                <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl shadow-inner border border-slate-100">
-                    <form action={updateTramiteStatus}>
-                       <input type="hidden" name="id" value={t.id} />
-                       <input type="hidden" name="nuevoEstado" value="en_proceso" />
-                       <button className="h-9 w-9 bg-white text-slate-300 hover:text-blue-600 rounded-lg flex items-center justify-center transition shadow-sm"><Clock size={16}/></button>
-                    </form>
-                    <form action={updateTramiteStatus}>
-                       <input type="hidden" name="id" value={t.id} />
-                       <input type="hidden" name="nuevoEstado" value="finalizado" />
-                       <button className="h-9 w-9 bg-white text-slate-300 hover:text-emerald-500 rounded-lg flex items-center justify-center transition shadow-sm font-black italic"><CheckCircle2 size={16}/></button>
-                    </form>
-                </div>
+                  <td className="px-8 py-6 text-center uppercase italic font-bold">
+                    <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border-2 ${
+                      t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500 border-orange-100/50' : 
+                      t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500 border-blue-100/50' : 
+                      'bg-emerald-50 text-emerald-600 border-emerald-100/50 italic uppercase font-black tracking-widest border-2'
+                    }`}>
+                      {t.estado}
+                    </span>
+                  </td>
 
-                <div className="flex gap-1 border-l border-slate-100 pl-4 items-center">
-                    <Link href={`/tramites/actualizar-nota?id=${t.id}`} className="p-3 text-slate-200 hover:text-blue-600 transition"><MessageSquare size={18}/></Link>
-                    <form action={deleteTramite}>
-                       <input type="hidden" name="id" value={t.id} />
-                       <button onClick={(e) => {if(!confirm("¿Borrar trámite definitivamente?")) e.preventDefault()}} className="p-3 text-slate-200 hover:text-red-500 transition"><Trash2 size={18}/></button>
-                    </form>
-                </div>
-              </div>
-            </div>
-          )
-        })}
+                  <td className="px-8 py-6">
+                    <div className="flex gap-2 justify-center">
+                      <form action={updateTramiteStatus}>
+                         <input type="hidden" name="id" value={t.id} />
+                         <input type="hidden" name="nuevoEstado" value="en_proceso" />
+                         <button className="h-9 w-9 flex items-center justify-center bg-white rounded-xl text-slate-300 hover:text-blue-600 hover:scale-110 border border-slate-100 shadow-sm transition active:scale-90">
+                            <Clock size={16} />
+                         </button>
+                      </form>
+
+                      <form action={updateTramiteStatus}>
+                         <input type="hidden" name="id" value={t.id} />
+                         <input type="hidden" name="nuevoEstado" value="finalizado" />
+                         <button className="h-9 w-9 flex items-center justify-center bg-white rounded-xl text-slate-300 hover:text-emerald-500 hover:scale-110 border border-slate-100 shadow-sm transition active:scale-90 italic">
+                            <CheckCircle2 size={16} />
+                         </button>
+                      </form>
+                      
+                      <Link 
+                        href={`/tramites/actualizar-nota?id=${t.id}`}
+                        className="h-9 w-9 flex items-center justify-center bg-slate-50 rounded-xl text-slate-300 hover:text-slate-900 transition active:scale-90 italic"
+                      >
+                         <MessageSquare size={16} />
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   )
