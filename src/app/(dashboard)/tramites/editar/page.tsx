@@ -1,29 +1,30 @@
 export const dynamic = 'force-dynamic'
 
-import React from 'react'
 import { createClient } from '@/lib/supabase'
 import { updateTramite } from '@/app/actions'
 import { redirect } from 'next/navigation'
-import { notFound } from 'next/navigation'
 
 export default async function EditarTramitePage({ searchParams }: { searchParams: { id: string } }) {
   const supabase = createClient()
   const id = searchParams.id
 
-  if (!id) return redirect('/tramites')
+  if (!id) redirect('/tramites')
 
+  // Consultas separadas — sin relaciones SQL complejas
   const { data: tramite } = await supabase
     .from('tramites')
-    .select('*, clientes(razon_social)')
-    .eq('id', id)
+    .select('id, cliente_id, tipo_tramite, fecha_vencimiento, observaciones')
+    .eq('id', id as string)
     .single()
-
-  if (!tramite) return redirect('/tramites')
 
   const { data: clientes } = await supabase
     .from('clientes')
     .select('id, razon_social')
-    .order('razon_social')
+    .order('razon_social', { ascending: true })
+
+  if (!tramite) redirect('/tramites')
+
+  const listaClientes = clientes || []
 
   return (
     <div className="max-w-xl mx-auto space-y-6 px-4">
@@ -45,7 +46,7 @@ export default async function EditarTramitePage({ searchParams }: { searchParams
               defaultValue={tramite.cliente_id}
               className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50"
             >
-              {(clientes || []).map((c: any) => (
+              {listaClientes.map((c: any) => (
                 <option key={c.id} value={c.id}>{c.razon_social}</option>
               ))}
             </select>
