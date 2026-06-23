@@ -167,3 +167,30 @@ export async function createComentario(formData: FormData) {
   
   revalidatePath('/tramites')
 }
+// GESTIÓN DE CLIENTES: EDITAR
+export async function updateCliente(formData: FormData) {
+  const supabase = createClient()
+  const id = formData.get('id') as string
+  
+  const data = {
+    razon_social: formData.get('razon_social') as string,
+    cuit: formData.get('cuit') as string,
+    email: formData.get('email') as string,
+    telefono: formData.get('telefono') as string,
+    direccion: formData.get('direccion') as string,
+    notas: formData.get('notas') as string
+  }
+
+  await supabase.from('clientes').update(data).eq('id', id)
+  revalidatePath('/clientes')
+  redirect('/clientes')
+}
+
+// GESTIÓN DE CLIENTES: BORRAR
+export async function deleteCliente(formData: FormData) {
+  const supabase = createClient()
+  const id = formData.get('id') as string
+  
+  await supabase.from('clientes').delete().eq('id', id)
+  revalidatePath('/clientes')
+}
