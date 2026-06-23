@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-// AUTH
 export async function login(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
@@ -19,7 +18,6 @@ export async function signOut() {
   redirect('/login')
 }
 
-// CLIENTES
 export async function createCliente(formData: FormData) {
   const supabase = createClient()
   const data = {
@@ -33,7 +31,6 @@ export async function createCliente(formData: FormData) {
   redirect('/clientes')
 }
 
-// TRÁMITES
 export async function createTramite(formData: FormData) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -72,4 +69,18 @@ export async function updateTramiteObservacion(id: string, nota: string) {
   const supabase = createClient()
   await supabase.from('tramites').update({ observaciones: nota }).eq('id', id)
   revalidatePath('/tramites')
+}
+
+// INCLUIMOS ESTA POR SI ACASO VERCEL LA BUSCA TODAVÍA
+export async function updateTramite(formData: FormData) {
+  const supabase = createClient()
+  const id = formData.get('id') as string
+  const data = {
+    tipo_tramite: formData.get('tipo_tramite') as string,
+    fecha_vencimiento: formData.get('fecha_vencimiento') as string || null,
+    observaciones: formData.get('observaciones') as string
+  }
+  await supabase.from('tramites').update(data).eq('id', id)
+  revalidatePath('/tramites')
+  redirect('/tramites')
 }
