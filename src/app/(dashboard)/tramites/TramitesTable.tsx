@@ -1,8 +1,25 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { updateTramiteStatus, deleteTramite, createComentario } from '@/app/actions'
-import { Clock, CheckCircle2, Circle, MoreHorizontal, Pencil, Trash2, MessageSquare, X, Send } from 'lucide-react'
+import { Clock, CheckCircle2, Circle, MoreHorizontal, Pencil, Trash2, MessageSquare, X, Send, AlertTriangle, ChevronDown } from 'lucide-react'
+
+const ESTADOS = ['todos', 'pendiente', 'en_proceso', 'finalizado']
+
+function diasRestantes(fecha: string) {
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+  const vence = new Date(fecha)
+  return Math.ceil((vence.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+function BadgeVencimiento({ fecha }: { fecha: string }) {
+  const dias = diasRestantes(fecha)
+  if (dias < 0) return <span className="inline-flex items-center gap-1 text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-full"><AlertTriangle size={9} /> Vencido</span>
+  if (dias === 0) return <span className="inline-flex items-center gap-1 text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-full"><AlertTriangle size={9} /> Hoy</span>
+  if (dias <= 3) return <span className="inline-flex items-center gap-1 text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full"><AlertTriangle size={9} /> {dias}d</span>
+  return <span className="text-[10px] text-slate-400 font-semibold">{fecha}</span>
+}
 
 export default function TramitesTable({ tramites }: { tramites: any[] }) {
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null)
@@ -11,6 +28,12 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
   const [nuevoComentario, setNuevoComentario] = useState('')
   const [cargando, setCargando] = useState(false)
   const menuRef = useRef<HTMLTableCellElement>(null)
+
+  // Filtros
+  const responsables = useMemo(() => ['todos', ...Array.from(new Set(tramites.map(t => t.creado_por).filter(Boolean)))], [tramites])
+  const [filtroResponsable, setFiltroResponsable] = useState('todos')
+  const [filtroEstado, setFiltroEstado] = useState('todos')
+  const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -37,156 +60,255 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
     setNuevoComentario('')
   }
 
+  // Filtrar y ordenar
+  const tramitesFiltrados = useMemo(() => {
+    return tramites
+      .filter(t => {
+        if (filtroResponsable !== 'todos' && t.creado_por !== filtroResponsable) return false
+        if (filtroEstado !== 'todos' && t.estado !== filtroEstado) return false
+        if (busqueda && !t.tipo_tramite?.toLowerCase().includes(busqueda.toLowerCase()) && !t.clientes?.razon_social?.toLowerCase().includes(busqueda.toLowerCase())) return false
+        return true
+      })
+      .sort((a, b) => {
+        // Vencidos y urgentes primero
+        if (!a.fecha_vencimiento && !b.fecha_vencimiento) return 0
+        if (!a.fecha_vencimiento) return 1
+        if (!b.fecha_vencimiento) return -1
+        return diasRestantes(a.fecha_vencimiento) - diasRestantes(b.fecha_vencimiento)
+      })
+  }, [tramites, filtroResponsable, filtroEstado, busqueda])
+
+  const urgentes = tramites.filter(t => t.fecha_vencimiento && diasRestantes(t.fecha_vencimiento) <= 3 && t.estado !== 'finalizado').length
+
   return (
     <>
+      {/* BARRA DE FILTROS */}
+      <div className="flex flex-wrap gap-3 items-center">
+
+        {/* Búsqueda */}
+        <input
+          type="text"
+          placeholder="Buscar trámite o cliente..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          className="flex-1 min-w-[200px] px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400 text-slate-700 placeholder:text-slate-300"
+        />
+
+        {/* Filtro responsable */}
+        <div className="relative">
+          <select
+            value={filtroResponsable}
+            onChange={e => setFiltroResponsable(e.target.value)}
+            className="appearance-none pl-4 pr-8 py-2.5 text-sm bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400 text-slate-600 font-semibold cursor-pointer"
+          >
+            {responsables.map(r => (
+              <option key={r} value={r}>{r === 'todos' ? 'Todos los responsables' : r}</option>
+            ))}
+          </select>
+          <ChevronDown size={13} className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" />
+        </div>
+
+        {/* Filtro estado */}
+        <div className="flex gap-1.5 bg-white border border-slate-200 rounded-2xl p-1">
+          {ESTADOS.map(e => (
+            <button
+              key={e}
+              onClick={() => setFiltroEstado(e)}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${
+                filtroEstado === e
+                  ? e === 'pendiente' ? 'bg-orange-500 text-white'
+                  : e === 'en_proceso' ? 'bg-blue-500 text-white'
+                  : e === 'finalizado' ? 'bg-emerald-500 text-white'
+                  : 'bg-slate-900 text-white'
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              {e === 'todos' ? 'Todos' : e.replace('_', ' ')}
+            </button>
+          ))}
+        </div>
+
+        {/* Badge urgentes */}
+        {urgentes > 0 && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-100 px-4 py-2 rounded-2xl">
+            <AlertTriangle size={13} className="text-red-500" />
+            <span className="text-red-500 text-[11px] font-black uppercase tracking-wide">{urgentes} urgente{urgentes > 1 ? 's' : ''}</span>
+          </div>
+        )}
+      </div>
+
       {/* TABLA */}
       <div className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-xl">
         <table className="w-full text-left">
-          <thead className="border-b border-slate-100">
-            <tr className="text-slate-400 text-[10px] font-black uppercase tracking-widest">
+          <thead className="border-b-2 border-slate-50">
+            <tr className="text-slate-300 text-[10px] font-black uppercase tracking-widest">
               <th className="px-8 py-5">Trámite</th>
               <th className="px-6 py-5 text-center">Responsable</th>
+              <th className="px-6 py-5 text-center">Vencimiento</th>
               <th className="px-6 py-5 text-center">Estado</th>
-              <th className="px-6 py-5 text-center">Cambiar Estado</th>
+              <th className="px-6 py-5 text-center">Cambiar</th>
               <th className="px-6 py-5 text-center">Notas</th>
               <th className="px-4 py-5"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {tramites.length === 0 ? (
+            {tramitesFiltrados.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-20 text-slate-300 font-bold uppercase text-xs tracking-widest">
-                  No hay trámites registrados aún
+                <td colSpan={7} className="text-center py-16 text-slate-300 font-bold uppercase text-xs tracking-widest">
+                  No hay trámites que coincidan
                 </td>
               </tr>
             ) : (
-              tramites.map((t: any) => (
-                <tr key={t.id} className="hover:bg-slate-50/40 transition-all">
+              tramitesFiltrados.map((t: any) => {
+                const dias = t.fecha_vencimiento ? diasRestantes(t.fecha_vencimiento) : null
+                const esUrgente = dias !== null && dias <= 3 && t.estado !== 'finalizado'
 
-                  {/* Trámite */}
-                  <td className="px-8 py-5">
-                    <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">
-                      {t.clientes?.razon_social || 'ESTUDIO'}
-                    </p>
-                    <p className="text-slate-800 font-black text-lg tracking-tight leading-none">
-                      {t.tipo_tramite || 'S/N'}
-                    </p>
-                    {t.fecha_vencimiento && (
-                      <p className="text-red-400 text-[10px] font-bold mt-1">
-                        Vence: {t.fecha_vencimiento}
+                return (
+                  <tr key={t.id} className={`transition-all group ${esUrgente ? 'bg-red-50/30 hover:bg-red-50/50' : 'hover:bg-slate-50/60'}`}>
+
+                    {/* Trámite */}
+                    <td className="px-8 py-5">
+                      {esUrgente && <div className="w-1 h-full absolute left-0 bg-red-400 rounded-r" />}
+                      <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">
+                        {t.clientes?.razon_social || 'ESTUDIO'}
                       </p>
-                    )}
-                  </td>
+                      <p className="text-slate-800 font-black text-base tracking-tight leading-snug">
+                        {t.tipo_tramite || 'S/N'}
+                      </p>
+                    </td>
 
-                  {/* Responsable */}
-                  <td className="px-6 py-5">
-                    <p className="text-center text-xs font-black text-slate-600 uppercase tracking-tight">
-                      {t.creado_por || 'Admin'}
-                    </p>
-                  </td>
+                    {/* Responsable */}
+                    <td className="px-6 py-5 text-center">
+                      <span className="inline-block bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wide px-3 py-1 rounded-full">
+                        {t.creado_por || 'Admin'}
+                      </span>
+                    </td>
 
-                  {/* Estado */}
-                  <td className="px-6 py-5 text-center">
-                    <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                      t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500' :
-                      t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500' :
-                      'bg-emerald-50 text-emerald-600'
-                    }`}>
-                      {t.estado}
-                    </span>
-                  </td>
+                    {/* Vencimiento */}
+                    <td className="px-6 py-5 text-center">
+                      {t.fecha_vencimiento ? <BadgeVencimiento fecha={t.fecha_vencimiento} /> : <span className="text-slate-200 text-xs">—</span>}
+                    </td>
 
-                  {/* Cambiar estado */}
-                  <td className="px-6 py-5">
-                    <div className="flex gap-1.5 justify-center">
-                      <form action={updateTramiteStatus}>
-                        <input type="hidden" name="id" value={t.id} />
-                        <input type="hidden" name="nuevoEstado" value="pendiente" />
-                        <button title="Pendiente" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-orange-400 hover:bg-orange-50 transition">
-                          <Circle size={15} />
-                        </button>
-                      </form>
-                      <form action={updateTramiteStatus}>
-                        <input type="hidden" name="id" value={t.id} />
-                        <input type="hidden" name="nuevoEstado" value="en_proceso" />
-                        <button title="En proceso" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition">
-                          <Clock size={15} />
-                        </button>
-                      </form>
-                      <form action={updateTramiteStatus}>
-                        <input type="hidden" name="id" value={t.id} />
-                        <input type="hidden" name="nuevoEstado" value="finalizado" />
-                        <button title="Finalizado" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-emerald-500 hover:bg-emerald-50 transition">
-                          <CheckCircle2 size={15} />
-                        </button>
-                      </form>
-                    </div>
-                  </td>
+                    {/* Estado */}
+                    <td className="px-6 py-5 text-center">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wide ${
+                        t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500' :
+                        t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500' :
+                        'bg-emerald-50 text-emerald-600'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          t.estado === 'pendiente' ? 'bg-orange-400' :
+                          t.estado === 'en_proceso' ? 'bg-blue-400' :
+                          'bg-emerald-400'
+                        }`} />
+                        {t.estado.replace('_', ' ')}
+                      </span>
+                    </td>
 
-                  {/* Notas */}
-                  <td className="px-6 py-5 text-center">
-                    <button
-                      onClick={() => abrirDrawer(t)}
-                      className="h-8 w-8 mx-auto flex items-center justify-center rounded-xl text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition"
-                      title="Ver comentarios"
-                    >
-                      <MessageSquare size={15} />
-                    </button>
-                  </td>
-
-                  {/* Menú ⋯ */}
-                  <td className="px-4 py-5 relative" ref={menuAbierto === t.id ? menuRef : null}>
-                    <button
-                      onClick={() => setMenuAbierto(menuAbierto === t.id ? null : t.id)}
-                      className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition"
-                    >
-                      <MoreHorizontal size={16} />
-                    </button>
-                    {menuAbierto === t.id && (
-                      <div className="absolute right-4 top-12 z-50 bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-36 overflow-hidden">
-                        <Link
-                          href={`/tramites/editar?id=${t.id}`}
-                          className="flex items-center gap-3 px-4 py-2.5 text-xs font-black text-slate-600 hover:bg-slate-50 transition uppercase"
-                          onClick={() => setMenuAbierto(null)}
-                        >
-                          <Pencil size={12} className="text-blue-400" /> Editar
-                        </Link>
-                        <button
-                          type="button"
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-black text-red-500 hover:bg-red-50 transition uppercase"
-                          onClick={async () => {
-                            setMenuAbierto(null)
-                            const formData = new FormData()
-                            formData.append('id', t.id)
-                            await deleteTramite(formData)
-                          }}
-                        >
-                          <Trash2 size={12} /> Borrar
-                        </button>
+                    {/* Cambiar estado */}
+                    <td className="px-6 py-5">
+                      <div className="flex gap-1 justify-center">
+                        <form action={updateTramiteStatus}>
+                          <input type="hidden" name="id" value={t.id} />
+                          <input type="hidden" name="nuevoEstado" value="pendiente" />
+                          <button title="Marcar pendiente" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-200 hover:text-orange-400 hover:bg-orange-50 transition">
+                            <Circle size={14} />
+                          </button>
+                        </form>
+                        <form action={updateTramiteStatus}>
+                          <input type="hidden" name="id" value={t.id} />
+                          <input type="hidden" name="nuevoEstado" value="en_proceso" />
+                          <button title="Marcar en proceso" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-200 hover:text-blue-500 hover:bg-blue-50 transition">
+                            <Clock size={14} />
+                          </button>
+                        </form>
+                        <form action={updateTramiteStatus}>
+                          <input type="hidden" name="id" value={t.id} />
+                          <input type="hidden" name="nuevoEstado" value="finalizado" />
+                          <button title="Marcar finalizado" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-200 hover:text-emerald-500 hover:bg-emerald-50 transition">
+                            <CheckCircle2 size={14} />
+                          </button>
+                        </form>
                       </div>
-                    )}
-                  </td>
+                    </td>
 
-                </tr>
-              ))
+                    {/* Notas */}
+                    <td className="px-6 py-5 text-center">
+                      <button
+                        onClick={() => abrirDrawer(t)}
+                        className="h-8 w-8 mx-auto flex items-center justify-center rounded-xl text-slate-200 hover:text-blue-500 hover:bg-blue-50 transition"
+                        title="Ver notas"
+                      >
+                        <MessageSquare size={14} />
+                      </button>
+                    </td>
+
+                    {/* Menú ⋯ */}
+                    <td className="px-4 py-5 relative" ref={menuAbierto === t.id ? menuRef : null}>
+                      <button
+                        onClick={() => setMenuAbierto(menuAbierto === t.id ? null : t.id)}
+                        className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-200 hover:text-slate-600 hover:bg-slate-100 transition"
+                      >
+                        <MoreHorizontal size={15} />
+                      </button>
+                      {menuAbierto === t.id && (
+                        <div className="absolute right-4 top-12 z-50 bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-36 overflow-hidden">
+                          <Link
+                            href={`/tramites/editar?id=${t.id}`}
+                            className="flex items-center gap-3 px-4 py-2.5 text-xs font-black text-slate-600 hover:bg-slate-50 transition uppercase"
+                            onClick={() => setMenuAbierto(null)}
+                          >
+                            <Pencil size={12} className="text-blue-400" /> Editar
+                          </Link>
+                          <button
+                            type="button"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-black text-red-400 hover:bg-red-50 transition uppercase"
+                            onClick={async () => {
+                              setMenuAbierto(null)
+                              const formData = new FormData()
+                              formData.append('id', t.id)
+                              await deleteTramite(formData)
+                            }}
+                          >
+                            <Trash2 size={12} /> Borrar
+                          </button>
+                        </div>
+                      )}
+                    </td>
+
+                  </tr>
+                )
+              })
             )}
           </tbody>
         </table>
+
+        {/* Footer con conteo */}
+        <div className="px-8 py-4 border-t border-slate-50 flex items-center justify-between">
+          <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">
+            {tramitesFiltrados.length} trámite{tramitesFiltrados.length !== 1 ? 's' : ''}
+            {tramitesFiltrados.length !== tramites.length && ` de ${tramites.length}`}
+          </p>
+          {(filtroResponsable !== 'todos' || filtroEstado !== 'todos' || busqueda) && (
+            <button
+              onClick={() => { setFiltroResponsable('todos'); setFiltroEstado('todos'); setBusqueda('') }}
+              className="text-[10px] text-blue-400 font-black uppercase tracking-wide hover:text-blue-600 transition"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
       </div>
 
       {/* OVERLAY */}
       {drawerTramite && (
-        <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-          onClick={cerrarDrawer}
-        />
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40" onClick={cerrarDrawer} />
       )}
 
       {/* DRAWER */}
       <div className={`fixed top-0 right-0 h-full w-[420px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${drawerTramite ? 'translate-x-0' : 'translate-x-full'}`}>
         {drawerTramite && (
           <>
-            {/* Header */}
             <div className="px-8 py-6 border-b border-slate-100 flex items-start justify-between">
               <div>
                 <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">
@@ -195,23 +317,34 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
                 <h2 className="text-slate-800 font-black text-xl tracking-tight">
                   {drawerTramite.tipo_tramite}
                 </h2>
-                <p className="text-slate-400 text-[10px] uppercase font-bold mt-1">
-                  Creado por {drawerTramite.creado_por}
-                </p>
+                <div className="flex items-center gap-3 mt-2">
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                    drawerTramite.estado === 'pendiente' ? 'bg-orange-50 text-orange-500' :
+                    drawerTramite.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500' :
+                    'bg-emerald-50 text-emerald-600'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      drawerTramite.estado === 'pendiente' ? 'bg-orange-400' :
+                      drawerTramite.estado === 'en_proceso' ? 'bg-blue-400' : 'bg-emerald-400'
+                    }`} />
+                    {drawerTramite.estado.replace('_', ' ')}
+                  </span>
+                  <p className="text-slate-400 text-[10px] font-bold uppercase">por {drawerTramite.creado_por}</p>
+                </div>
               </div>
               <button onClick={cerrarDrawer} className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition">
                 <X size={16} />
               </button>
             </div>
 
-            {/* Comentarios */}
-            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
+            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-3">
               {cargando ? (
-                <p className="text-slate-300 text-xs italic">Cargando...</p>
+                <p className="text-slate-300 text-xs italic text-center pt-8">Cargando...</p>
               ) : comentarios.length === 0 ? (
-                <div className="text-center py-12">
-                  <MessageSquare size={32} className="text-slate-200 mx-auto mb-3" />
-                  <p className="text-slate-300 text-xs font-bold uppercase tracking-widest">Sin comentarios aún</p>
+                <div className="text-center py-16">
+                  <MessageSquare size={28} className="text-slate-200 mx-auto mb-3" />
+                  <p className="text-slate-300 text-xs font-bold uppercase tracking-widest">Sin notas aún</p>
+                  <p className="text-slate-300 text-[10px] mt-1">Escribí el primer comentario abajo</p>
                 </div>
               ) : (
                 comentarios.map((c: any) => (
@@ -226,12 +359,8 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
               )}
             </div>
 
-            {/* Input nuevo comentario */}
             <div className="px-8 py-6 border-t border-slate-100">
-              <form
-                action={createComentario}
-                onSubmit={() => setNuevoComentario('')}
-              >
+              <form action={createComentario} onSubmit={() => setNuevoComentario('')}>
                 <input type="hidden" name="tramite_id" value={drawerTramite.id} />
                 <div className="flex gap-3 items-end">
                   <textarea
@@ -239,14 +368,14 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
                     rows={3}
                     value={nuevoComentario}
                     onChange={e => setNuevoComentario(e.target.value)}
-                    placeholder="Escribir comentario..."
-                    className="flex-1 text-sm border border-slate-200 rounded-2xl px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 text-slate-700"
+                    placeholder="Escribir nota o novedad..."
+                    className="flex-1 text-sm border border-slate-200 rounded-2xl px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 text-slate-700 placeholder:text-slate-300"
                   />
                   <button
                     type="submit"
-                    className="h-12 w-12 flex items-center justify-center bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition active:scale-95 shadow-lg"
+                    className="h-12 w-12 flex items-center justify-center bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition active:scale-95 shadow-lg flex-shrink-0"
                   >
-                    <Send size={16} />
+                    <Send size={15} />
                   </button>
                 </div>
               </form>
