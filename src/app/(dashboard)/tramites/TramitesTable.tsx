@@ -140,8 +140,8 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
       {/* TABLA */}
       <div className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-xl">
         <table className="w-full text-left">
-          <thead className="border-b-2 border-slate-50">
-            <tr className="text-slate-300 text-[10px] font-black uppercase tracking-widest">
+          <thead className="border-b-2 border-slate-200">
+            <tr className="text-slate-600 text-[10px] font-black uppercase tracking-widest">
               <th className="px-8 py-5">Trámite</th>
               <th className="px-6 py-5 text-center">Responsable</th>
               <th className="px-6 py-5 text-center">Vencimiento</th>
@@ -154,7 +154,7 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
           <tbody className="divide-y divide-slate-50">
             {tramitesFiltrados.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-16 text-slate-300 font-bold uppercase text-xs tracking-widest">
+                <td colSpan={7} className="text-center py-16 text-slate-600 font-bold uppercase text-xs tracking-widest">
                   No hay trámites que coincidan
                 </td>
               </tr>
@@ -211,21 +211,21 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
                         <form action={updateTramiteStatus}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="pendiente" />
-                          <button title="Marcar pendiente" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-200 hover:text-orange-400 hover:bg-orange-50 transition">
+                          <button title="Marcar pendiente" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-500 hover:text-orange-400 hover:bg-orange-50 transition">
                             <Circle size={14} />
                           </button>
                         </form>
                         <form action={updateTramiteStatus}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="en_proceso" />
-                          <button title="Marcar en proceso" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-200 hover:text-blue-500 hover:bg-blue-50 transition">
+                          <button title="Marcar en proceso" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-500 hover:text-blue-500 hover:bg-blue-50 transition">
                             <Clock size={14} />
                           </button>
                         </form>
                         <form action={updateTramiteStatus}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="finalizado" />
-                          <button title="Marcar finalizado" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-200 hover:text-emerald-500 hover:bg-emerald-50 transition">
+                          <button title="Marcar finalizado" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-500 hover:text-emerald-500 hover:bg-emerald-50 transition">
                             <CheckCircle2 size={14} />
                           </button>
                         </form>
@@ -236,7 +236,7 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
                     <td className="px-6 py-5 text-center">
                       <button
                         onClick={() => abrirDrawer(t)}
-                        className="h-8 w-8 mx-auto flex items-center justify-center rounded-xl text-slate-200 hover:text-blue-500 hover:bg-blue-50 transition"
+                        className="h-8 w-8 mx-auto flex items-center justify-center rounded-xl text-slate-500 hover:text-blue-500 hover:bg-blue-50 transition"
                         title="Ver notas"
                       >
                         <MessageSquare size={14} />
@@ -247,7 +247,7 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
                     <td className="px-4 py-5 relative" ref={menuAbierto === t.id ? menuRef : null}>
                       <button
                         onClick={() => setMenuAbierto(menuAbierto === t.id ? null : t.id)}
-                        className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-200 hover:text-slate-600 hover:bg-slate-100 transition"
+                        className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition"
                       >
                         <MoreHorizontal size={15} />
                       </button>
