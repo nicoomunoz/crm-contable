@@ -15,10 +15,18 @@ function diasRestantes(fecha: string) {
 
 function BadgeVencimiento({ fecha }: { fecha: string }) {
   const dias = diasRestantes(fecha)
-  if (dias < 0) return <span className="inline-flex items-center gap-1 text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-full"><AlertTriangle size={9} /> Vencido</span>
-  if (dias === 0) return <span className="inline-flex items-center gap-1 text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-full"><AlertTriangle size={9} /> Hoy</span>
-  if (dias <= 3) return <span className="inline-flex items-center gap-1 text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full"><AlertTriangle size={9} /> {dias}d</span>
-  return <span className="text-[10px] text-slate-400 font-semibold">{fecha}</span>
+  const fechaFormateada = new Date(fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      {dias < 0 && <span className="inline-flex items-center gap-1 text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-full"><AlertTriangle size={9} /> Vencido</span>}
+      {dias === 0 && <span className="inline-flex items-center gap-1 text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-full"><AlertTriangle size={9} /> Hoy</span>}
+      {dias === 1 && <span className="inline-flex items-center gap-1 text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full"><AlertTriangle size={9} /> 1 día</span>}
+      {dias > 1 && dias <= 3 && <span className="inline-flex items-center gap-1 text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full"><AlertTriangle size={9} /> {dias} días</span>}
+      {dias > 3 && <span className="inline-flex items-center gap-1 text-[10px] font-black text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">{dias} días</span>}
+      <span className="text-[10px] text-slate-400 font-medium">{fechaFormateada}</span>
+    </div>
+  )
 }
 
 export default function TramitesTable({ tramites, clientes, comentariosRaw }: { tramites: any[], clientes: any[], comentariosRaw: any[] }) {
@@ -28,6 +36,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw }: { 
   const [nuevoComentario, setNuevoComentario] = useState('')
   const [cargando, setCargando] = useState(false)
   const menuRef = useRef<HTMLTableCellElement>(null)
+  const [orden, setOrden] = useState<'vencimiento' | 'creacion'>('vencimiento')
 
   // Filtros
   const responsables = useMemo(() => ['todos', ...Array.from(new Set(tramites.map(t => t.creado_por).filter(Boolean)))], [tramites])
@@ -86,6 +95,10 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw }: { 
         return true
       })
       .sort((a, b) => {
+        if (orden === 'creacion') {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        }
+        // Por vencimiento: sin fecha van al final
         if (!a.fecha_vencimiento && !b.fecha_vencimiento) return 0
         if (!a.fecha_vencimiento) return 1
         if (!b.fecha_vencimiento) return -1
@@ -150,6 +163,20 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw }: { 
             <span className="text-red-500 text-[11px] font-black uppercase tracking-wide">{urgentes} urgente{urgentes > 1 ? 's' : ''}</span>
           </div>
         )}
+      </div>
+      <div className="flex gap-1 bg-white border border-slate-200 rounded-2xl p-1">
+        <button
+          onClick={() => setOrden('vencimiento')}
+          className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${orden === 'vencimiento' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          Por vencimiento
+        </button>
+        <button
+          onClick={() => setOrden('creacion')}
+          className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${orden === 'creacion' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          Más recientes
+        </button>
       </div>
 
       {/* TABLA */}
