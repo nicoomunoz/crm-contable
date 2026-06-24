@@ -45,7 +45,7 @@ export default function ClientesTable({ clientes }: { clientes: any[] }) {
       <div className="bg-white border border-slate-100 rounded-[1.5rem] overflow-hidden shadow-sm">
         <table className="w-full text-left">
           <thead className="border-b border-slate-100">
-            <tr className="text-slate-400 text-[10px] font-black uppercase tracking-widest">
+            <tr className="text-slate-600 text-[10px] font-black uppercase tracking-widest">
               <th className="px-8 py-5">Cliente</th>
               <th className="px-6 py-5">CUIT</th>
               <th className="px-6 py-5">Email</th>
@@ -96,7 +96,7 @@ export default function ClientesTable({ clientes }: { clientes: any[] }) {
                   <td className="px-4 py-4 relative" ref={menuAbierto === c.id ? menuRef : null}>
                     <button
                       onClick={() => setMenuAbierto(menuAbierto === c.id ? null : c.id)}
-                      className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-200 hover:text-slate-600 hover:bg-slate-100 transition"
+                      className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
                     >
                       <MoreHorizontal size={15} />
                     </button>
