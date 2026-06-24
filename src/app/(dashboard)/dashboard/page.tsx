@@ -84,7 +84,7 @@ export default async function DashboardPage() {
             </div>
             {proximosVencimientos.length > 0 && (
               <span className="text-[10px] font-black text-red-500 bg-red-50 px-2.5 py-1 rounded-full flex items-center gap-1">
-                <AlertTriangle size={9} /> {proximosVencimientos.length} urgente{proximosVencimientos.length > 1 ? 's' : ''}
+                <AlertTriangle size={9} /> {urgentesCount} urgente{urgentesCount !== 1 ? 's' : ''}
               </span>
             )}
           </div>
