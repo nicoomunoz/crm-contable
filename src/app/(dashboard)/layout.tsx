@@ -17,7 +17,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Briefcase size={18} />
           </div>
           <span className="text-white font-bold tracking-tight text-lg">
-            PANEL
+            GRIMALT
           </span>
         </div>
         
