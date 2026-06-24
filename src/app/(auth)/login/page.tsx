@@ -16,19 +16,19 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 mb-10 text-blue-400">
                <Database size={24} />
-               <span className="font-bold tracking-widest text-xs uppercase">Core System v1.0</span>
+               <span className="font-bold tracking-widest text-xs uppercase">Sistema de Gestión Contable</span>
             </div>
             <h1 className="text-4xl font-black leading-[1.1] mb-6 tracking-tight">
-              Control <br/> Operativo <br/>
-              <span className="text-blue-500 underline decoration-4 underline-offset-8">Grimalt.</span>
+              ESTUDIO <br/> 
+              <span className="text-blue-500 underline decoration-4 underline-offset-8">GRIMALT</span>
             </h1>
             <p className="text-slate-400 text-sm leading-relaxed max-w-[280px]">
-              Plataforma de gestión interna para contadores. Acceda a su panel de trámites y base de clientes.
+              Acceso a trámites y clientes.
             </p>
           </div>
 
           <div className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">
-            © 2024 Estudio Contable
+            estudiogrimalt@gmail.com
           </div>
 
           {/* Decoración geométrica sutil al fondo de la columna oscura */}
@@ -42,7 +42,7 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
           </div>
 
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-slate-900 mb-2 uppercase tracking-tighter">Bienvenido</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-2 uppercase tracking-tighter">Bienvenido/a</h2>
             <p className="text-slate-500 text-sm">Ingrese sus credenciales de acceso</p>
           </div>
 
@@ -56,7 +56,7 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
           <form action={login} className="space-y-5">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 ml-1">
-                <Mail size={12} className="text-slate-300" /> Correo electrónico
+                <Mail size={12} className="text-slate-300" /> MAIL
               </label>
               <input 
                 name="email" 
@@ -91,7 +91,7 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
           <div className="mt-12 text-center border-t pt-8 border-slate-50">
              <div className="flex items-center justify-center gap-3 text-slate-400 font-black text-[9px] uppercase tracking-[0.2em]">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                Terminal con conexión encriptada
+                Conexión segura
              </div>
           </div>
         </div>
