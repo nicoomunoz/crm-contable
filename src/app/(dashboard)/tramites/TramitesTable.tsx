@@ -245,9 +245,9 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw }: { 
                           className={totalNotas > 0 ? "text-blue-500" : "text-slate-300"} 
                         />
                         
-                        {/* EL GLOBITO AZUL */}
+                        {/* EL GLOBITO AZUL NITIDO */}
                         {totalNotas > 0 && (
-                          <span className="absolute -top-2 -right-1 bg-blue-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                          <span className="absolute -top-2 -right-1 bg-blue-600 text-white text-[11px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-lg antialiased tabular-nums leading-none ring-1 ring-blue-600/10">
                             {totalNotas}
                           </span>
                         )}
