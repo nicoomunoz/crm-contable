@@ -257,30 +257,46 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw }: { 
                       </span>
                     </td>
 
-                    {/* Cambiar estado */}
+                    {/* Cambiar estado: MÁS GRANDES Y MARCADOS */}
                     <td className="px-6 py-5">
-                      <div className="flex gap-1 justify-center">
+                      <div className="flex gap-2 justify-center items-center">
+                        
+                        {/* Botón PENDIENTE (Círculo) */}
                         <form action={updateTramiteStatus}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="pendiente" />
-                          <button title="Marcar pendiente" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-500 hover:text-orange-400 hover:bg-orange-50 transition">
-                            <Circle size={14} />
+                          <button 
+                            title="Marcar pendiente" 
+                            className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-orange-500 hover:bg-orange-50 hover:border-orange-200 border-2 border-transparent transition-all active:scale-90"
+                          >
+                            <Circle size={18} strokeWidth={2.5} />
                           </button>
                         </form>
+                    
+                        {/* Botón EN PROCESO (Reloj) */}
                         <form action={updateTramiteStatus}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="en_proceso" />
-                          <button title="Marcar en proceso" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-500 hover:text-blue-500 hover:bg-blue-50 transition">
-                            <Clock size={14} />
+                          <button 
+                            title="Marcar en proceso" 
+                            className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 border-2 border-transparent transition-all active:scale-90"
+                          >
+                            <Clock size={18} strokeWidth={2.5} />
                           </button>
                         </form>
+                    
+                        {/* Botón FINALIZADO (Check) */}
                         <form action={updateTramiteStatus}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="finalizado" />
-                          <button title="Marcar finalizado" className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-500 hover:text-emerald-500 hover:bg-emerald-50 transition">
-                            <CheckCircle2 size={14} />
+                          <button 
+                            title="Marcar finalizado" 
+                            className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 border-2 border-transparent transition-all active:scale-90"
+                          >
+                            <CheckCircle2 size={18} strokeWidth={2.5} />
                           </button>
                         </form>
+                    
                       </div>
                     </td>
 
