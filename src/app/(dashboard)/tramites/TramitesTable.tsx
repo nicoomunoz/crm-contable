@@ -106,7 +106,11 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw }: { 
       })
   }, [tramites, clientes, filtroResponsable, filtroEstado, busqueda, orden])
 
-  const urgentes = tramites.filter(t => t.fecha_vencimiento && diasRestantes(t.fecha_vencimiento) <= 3 && t.estado !== 'finalizado').length
+  const urgentes = tramites.filter(t => {
+    if (!t.fecha_vencimiento || t.estado === 'finalizado') return false
+    const dias = diasRestantes(t.fecha_vencimiento)
+    return dias >= 0 && dias <= 3
+  }).length
 
   return (
     <>
