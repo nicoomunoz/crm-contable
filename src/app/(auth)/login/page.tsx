@@ -3,8 +3,7 @@ import { AlertCircle, LockKeyhole, Mail, ShieldCheck, Database } from 'lucide-re
 export default function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
 return (
 <div className="min-h-screen w-full flex items-center justify-center bg-[#f8fafc] font-sans">
-code
-Code
+
 {/* Fondo de oficina moderna (Grid sutil de puntos) */}
   <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" 
        style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
