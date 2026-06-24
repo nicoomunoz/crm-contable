@@ -13,7 +13,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Briefcase size={18} />
           </div>
           <span className="text-white font-bold tracking-tight text-lg">
-            Estudio CRM
+            PANEL
           </span>
         </div>
         
@@ -23,7 +23,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             className="flex items-center gap-3 p-3 hover:bg-slate-800 hover:text-white rounded-xl transition duration-200"
           >
             <LayoutDashboard size={20} /> 
-            <span className="font-medium">Dashboard</span>
+            <span className="font-medium">Inicio / Resúmen</span>
           </Link>
           
           <Link 
