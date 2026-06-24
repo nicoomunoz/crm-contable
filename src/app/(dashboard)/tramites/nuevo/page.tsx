@@ -26,7 +26,7 @@ export default async function NuevoTramitePage() {
 
         <div>
           <label className="block text-sm font-semibold mb-2 text-slate-700">Tipo de Trámite</label>
-          <input name="tipo_tramite" placeholder="Ej: Liquidación IVA, Certificación, Alta AFIP" required className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50" />
+          <input name="tipo_tramite" placeholder="Descripción del trámite" required className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
