@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 import { signOut } from '@/app/actions'
-import { Users, LayoutDashboard, Briefcase, LogOut } from 'lucide-react'
+import { Users, LayoutDashboard, Briefcase, LogOut, Settings } from 'lucide-react'
 import Link from 'next/link'
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -40,6 +40,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           >
             <Briefcase size={20} /> 
             <span className="font-medium">Trámites</span>
+          </Link>
+          <Link 
+            href="/perfil" 
+            className="flex items-center gap-3 p-3 hover:bg-slate-800 hover:text-white rounded-xl transition duration-200"
+          >
+            <Settings size={20} /> 
+            <span className="font-medium text-sm">Seguridad</span>
           </Link>
         </nav>
 
