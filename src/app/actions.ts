@@ -101,10 +101,16 @@ export async function createTramite(formData: FormData) {
   const { data: nuevo, error } = await supabase.from('tramites').insert(data).select().single()
   if (error) throw new Error(error.message)
 
+  const { data: cliente } = await supabase
+    .from('clientes')
+    .select('razon_social')
+    .eq('id', data.cliente_id)
+    .single()
+
   await registrarAuditoria(supabase, {
     usuario,
     accion: 'CREACION',
-    detalle: `Creó el trámite "${data.tipo_tramite}"`,
+    detalle: `Creó "${data.tipo_tramite}" para ${cliente?.razon_social || 'cliente desconocido'}`,
     tramite_id: nuevo?.id,
   })
 
@@ -122,8 +128,14 @@ export async function updateTramiteStatus(formData: FormData) {
 
   const { data: tramiteActual } = await supabase
     .from('tramites')
-    .select('estado, tipo_tramite')
+    .select('estado, tipo_tramite, cliente_id')
     .eq('id', id)
+    .single()
+
+  const { data: cliente } = await supabase
+    .from('clientes')
+    .select('razon_social')
+    .eq('id', tramiteActual?.cliente_id)
     .single()
 
   const { error } = await supabase
@@ -136,7 +148,7 @@ export async function updateTramiteStatus(formData: FormData) {
   await registrarAuditoria(supabase, {
     usuario,
     accion: 'ESTADO',
-    detalle: `Cambió "${tramiteActual?.tipo_tramite}" de ${tramiteActual?.estado?.replace('_', ' ')} a ${nuevoEstado.replace('_', ' ')}`,
+    detalle: `Cambió estado de "${tramiteActual?.tipo_tramite}" (${cliente?.razon_social || 'cliente desconocido'}) de ${tramiteActual?.estado?.replace('_', ' ')} a ${nuevoEstado.replace('_', ' ')}`,
     tramite_id: id,
   })
 
@@ -149,6 +161,18 @@ export async function updateTramiteObservacion(id: string, nota: string) {
   const supabase = createClient()
   const usuario = await getNombreUsuario(supabase)
 
+  const { data: tramiteData } = await supabase
+    .from('tramites')
+    .select('tipo_tramite, cliente_id')
+    .eq('id', id)
+    .single()
+
+  const { data: clienteData } = await supabase
+    .from('clientes')
+    .select('razon_social')
+    .eq('id', tramiteData?.cliente_id)
+    .single()
+
   const { error } = await supabase
     .from('tramites')
     .update({ observaciones: nota })
@@ -159,7 +183,7 @@ export async function updateTramiteObservacion(id: string, nota: string) {
   await registrarAuditoria(supabase, {
     usuario,
     accion: 'NOTA',
-    detalle: `Editó la observación del trámite`,
+    detalle: `Editó nota de "${tramiteData?.tipo_tramite}" de ${clienteData?.razon_social || 'cliente desconocido'}`,
     tramite_id: id,
   })
 
@@ -179,13 +203,19 @@ export async function updateTramite(formData: FormData) {
     observaciones: formData.get('observaciones') as string,
   }
 
+  const { data: clienteData } = await supabase
+    .from('clientes')
+    .select('razon_social')
+    .eq('id', data.cliente_id)
+    .single()
+
   const { error } = await supabase.from('tramites').update(data).eq('id', id)
   if (error) throw new Error(error.message)
 
   await registrarAuditoria(supabase, {
     usuario,
     accion: 'EDICION',
-    detalle: `Editó el trámite "${data.tipo_tramite}"`,
+    detalle: `Editó "${data.tipo_tramite}" de ${clienteData?.razon_social || 'cliente desconocido'}`,
     tramite_id: id,
   })
 
@@ -202,8 +232,14 @@ export async function deleteTramite(formData: FormData) {
 
   const { data: tramite } = await supabase
     .from('tramites')
-    .select('tipo_tramite')
+    .select('tipo_tramite, cliente_id')
     .eq('id', id)
+    .single()
+
+  const { data: cliente } = await supabase
+    .from('clientes')
+    .select('razon_social')
+    .eq('id', tramite?.cliente_id)
     .single()
 
   const { error } = await supabase.from('tramites').delete().eq('id', id)
@@ -212,7 +248,7 @@ export async function deleteTramite(formData: FormData) {
   await registrarAuditoria(supabase, {
     usuario,
     accion: 'ELIMINACION',
-    detalle: `Eliminó el trámite "${tramite?.tipo_tramite}"`,
+    detalle: `Eliminó "${tramite?.tipo_tramite}" de ${cliente?.razon_social || 'cliente desconocido'}`,
   })
 
   revalidatePath('/tramites')
@@ -226,6 +262,18 @@ export async function createComentario(formData: FormData) {
   const tramite_id = formData.get('tramite_id') as string
   const contenido = formData.get('contenido') as string
 
+  const { data: tramiteData } = await supabase
+    .from('tramites')
+    .select('tipo_tramite, cliente_id')
+    .eq('id', tramite_id)
+    .single()
+
+  const { data: clienteData } = await supabase
+    .from('clientes')
+    .select('razon_social')
+    .eq('id', tramiteData?.cliente_id)
+    .single()
+
   const { error } = await supabase.from('comentarios').insert({
     tramite_id,
     contenido,
@@ -236,7 +284,7 @@ export async function createComentario(formData: FormData) {
   await registrarAuditoria(supabase, {
     usuario,
     accion: 'COMENTARIO',
-    detalle: `Agregó un comentario al trámite`,
+    detalle: `Comentó en "${tramiteData?.tipo_tramite}" de ${clienteData?.razon_social || 'cliente desconocido'}`,
     tramite_id,
   })
 
