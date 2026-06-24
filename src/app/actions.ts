@@ -167,4 +167,23 @@ export async function createComentario(formData: FormData) {
   
   revalidatePath('/tramites')
 }
+// ACTUALIZAR CONTRASEÑA
+export async function updatePassword(formData: FormData) {
+  const supabase = createClient()
+  const password = formData.get('password') as string
+  const confirmPassword = formData.get('confirmPassword') as string
 
+  if (password !== confirmPassword) {
+    redirect('/perfil?error=Las contraseñas no coinciden')
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: password
+  })
+
+  if (error) {
+    redirect(`/perfil?error=${error.message}`)
+  }
+
+  redirect('/perfil?success=true')
+}
