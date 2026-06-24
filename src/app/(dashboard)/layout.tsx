@@ -3,6 +3,7 @@ import { signOut } from '@/app/actions'
 import { Users, LayoutDashboard, Briefcase, LogOut, Settings } from 'lucide-react'
 import Link from 'next/link'
 import SessionGuard from '@/components/SessionGuard' // <-- Importar
+import { History } from 'lucide-react'
 
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -43,6 +44,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           >
             <Briefcase size={20} /> 
             <span className="font-medium">Trámites</span>
+          </Link>
+          <Link
+            href="/historial"
+            className="flex items-center gap-3 p-3 hover:bg-slate-800 hover:text-white rounded-xl transition duration-200"
+          >
+            <History size={20} />
+            <span className="font-medium">Historial</span>
           </Link>
           <Link 
             href="/perfil" 
