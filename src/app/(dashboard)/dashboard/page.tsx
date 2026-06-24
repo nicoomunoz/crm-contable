@@ -30,6 +30,12 @@ export default async function DashboardPage() {
     const fv = new Date(t.fecha_vencimiento)
     return fv <= proximaSemana
   }).sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+  
+  const urgentesCount = tramites.filter(t => {
+    if (!t.fecha_vencimiento || t.estado === 'finalizado') return false
+    const dias = Math.ceil((new Date(t.fecha_vencimiento).getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+    return dias >= 0 && dias <= 3
+  }).length
 
   function diasRestantes(fecha: string) {
     const fv = new Date(fecha)
