@@ -160,21 +160,26 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw }: { 
               </tr>
             ) : (
               tramitesFiltrados.map((t: any) => {
+                // REEMPLAZÁ LO QUE HAYA AQUÍ ADENTRO POR ESTO:
                 const dias = t.fecha_vencimiento ? diasRestantes(t.fecha_vencimiento) : null
                 const esUrgente = dias !== null && dias <= 3 && t.estado !== 'finalizado'
                 const totalNotas = comentariosRaw.filter((c: any) => c.tramite_id === t.id).length
+                
+                // ESTA ES LA CLAVE: Buscamos el nombre en la lista de clientes
+                const miCliente = clientes.find((c: any) => c.id === t.cliente_id)
+                const nombreClienteMostrable = miCliente ? miCliente.razon_social : "CLIENTE"
 
                 return (
                   <tr key={t.id} className={`transition-all group ${esUrgente ? 'bg-red-50/30 hover:bg-red-50/50' : 'hover:bg-slate-50/60'}`}>
 
                     {/* Trámite */}
+                  
                     <td className="px-8 py-5">
-                      {esUrgente && <div className="w-1 h-full absolute left-0 bg-red-400 rounded-r" />}
                       <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">
-                        {t.clientes?.razon_social || 'ESTUDIO'}
+                        {nombreClienteMostrable} {/* <-- CAMBIAMOS t.clientes... por esta variable */}
                       </p>
                       <p className="text-slate-800 font-black text-base tracking-tight leading-snug">
-                        {t.tipo_tramite || 'S/N'}
+                        {t.tipo_tramite}
                       </p>
                     </td>
 
