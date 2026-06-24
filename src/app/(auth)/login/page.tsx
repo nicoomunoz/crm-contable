@@ -84,7 +84,6 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
 
             <button 
               type="submit"
-              onClick={() => sessionStorage.removeItem('grimalt_crm_session')}
               className="w-full bg-slate-900 text-white py-4 rounded-lg font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-blue-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3 mt-6 shadow-slate-900/10"
             >
               INGRESAR AL PANEL <LockKeyhole size={14} />
@@ -102,4 +101,7 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
       </div>
     </div>
   )
+if (typeof window !== 'undefined') {
+    sessionStorage.removeItem('estudio_session_active');
+}
 }
