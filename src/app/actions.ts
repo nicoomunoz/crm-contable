@@ -167,14 +167,21 @@ export async function createComentario(formData: FormData) {
   
   revalidatePath('/tramites')
 }
-// ACTUALIZAR CONTRASEÑA
+// ACTUALIZAR CONTRASEÑA CON REQUISITOS DE COMPLEJIDAD
 export async function updatePassword(formData: FormData) {
   const supabase = createClient()
   const password = formData.get('password') as string
   const confirmPassword = formData.get('confirmPassword') as string
 
+  // Requisitos: Mínimo 8 caracteres, al menos una letra, un número y un símbolo
+  const regex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&._\-\/])[A-Za-z\d@$!%*?&._\-\/]{8,}$/
+
   if (password !== confirmPassword) {
     redirect('/perfil?error=Las contraseñas no coinciden')
+  }
+
+  if (!regex.test(password)) {
+    redirect('/perfil?error=La clave debe tener al menos 8 caracteres, una letra, un número y un símbolo')
   }
 
   const { error } = await supabase.auth.updateUser({
