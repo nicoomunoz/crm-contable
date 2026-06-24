@@ -21,7 +21,7 @@ function BadgeVencimiento({ fecha }: { fecha: string }) {
   return <span className="text-[10px] text-slate-400 font-semibold">{fecha}</span>
 }
 
-export default function TramitesTable({ tramites }: { tramites: any[] }) {
+export default function TramitesTable({ tramites, clientes, comentariosRaw }: { tramites: any[], clientes: any[], comentariosRaw: any[] }) {
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null)
   const [drawerTramite, setDrawerTramite] = useState<any | null>(null)
   const [comentarios, setComentarios] = useState<any[]>([])
@@ -162,6 +162,7 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
               tramitesFiltrados.map((t: any) => {
                 const dias = t.fecha_vencimiento ? diasRestantes(t.fecha_vencimiento) : null
                 const esUrgente = dias !== null && dias <= 3 && t.estado !== 'finalizado'
+                const totalNotas = comentariosRaw.filter((c: any) => c.tramite_id === t.id).length
 
                 return (
                   <tr key={t.id} className={`transition-all group ${esUrgente ? 'bg-red-50/30 hover:bg-red-50/50' : 'hover:bg-slate-50/60'}`}>
@@ -236,10 +237,20 @@ export default function TramitesTable({ tramites }: { tramites: any[] }) {
                     <td className="px-6 py-5 text-center">
                       <button
                         onClick={() => abrirDrawer(t)}
-                        className="h-8 w-8 mx-auto flex items-center justify-center rounded-xl text-slate-500 hover:text-blue-500 hover:bg-blue-50 transition"
+                        className="group relative flex items-center justify-center h-10 w-16 mx-auto bg-slate-50 border-2 border-slate-100 rounded-xl hover:bg-white hover:border-blue-600 transition-all shadow-sm active:scale-95"
                         title="Ver notas"
                       >
-                        <MessageSquare size={14} />
+                        <MessageSquare 
+                          size={18} 
+                          className={totalNotas > 0 ? "text-blue-500" : "text-slate-300"} 
+                        />
+                        
+                        {/* EL GLOBITO AZUL */}
+                        {totalNotas > 0 && (
+                          <span className="absolute -top-2 -right-1 bg-blue-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                            {totalNotas}
+                          </span>
+                        )}
                       </button>
                     </td>
 
