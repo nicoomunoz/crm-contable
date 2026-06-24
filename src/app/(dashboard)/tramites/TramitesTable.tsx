@@ -288,7 +288,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw }: { 
                     <td className="px-6 py-5 text-center">
                       <button
                         onClick={() => abrirDrawer(t)}
-                        className="group relative flex items-center justify-center h-10 w-16 mx-auto bg-slate-50 border-2 border-slate-100 rounded-xl hover:bg-white hover:border-blue-600 transition-all shadow-sm active:scale-95"
+                        className="group relative flex items-center justify-center h-10 w-16 mx-auto bg-white border-2 border-slate-300 rounded-xl hover:border-blue-600 hover:shadow-md transition-all active:scale-95 shadow-sm
                         title="Ver notas"
                       >
                         <MessageSquare 
