@@ -235,9 +235,9 @@ export default async function DashboardPage() {
                   <div key={nombre} className="px-5 py-3">
                     <p className="text-xs font-black text-slate-700 uppercase tracking-wide mb-2">{nombre}</p>
                     <div className="flex gap-3">
-                      <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-md">{stats.pendiente} pend.</span>
-                      <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">{stats.en_proceso} proc.</span>
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">{stats.finalizado} fin.</span>
+                      <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-md">{stats.pendiente} pendiente/s.</span>
+                      <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">{stats.en_proceso} en proceso.</span>
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">{stats.finalizado} finalizado/s.</span>
                     </div>
                   </div>
                 ))}
