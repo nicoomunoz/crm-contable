@@ -2,7 +2,25 @@ import { ReactNode } from 'react'
 import { signOut } from '@/app/actions'
 import { Users, LayoutDashboard, Briefcase, LogOut, Settings } from 'lucide-react'
 import Link from 'next/link'
+import SessionGuard from '@/components/SessionGuard' // <-- Importar
 
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      
+      {/* EL GUARDIA QUE BORRA TODO AL CERRAR VENTANA: */}
+      <SessionGuard />
+
+      <aside className="...">
+         {/* ... Sidebar ... */}
+      </aside>
+
+      <main className="...">
+         {children}
+      </main>
+    </div>
+  )
+}
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen bg-gray-50 text-slate-900 font-sans">
