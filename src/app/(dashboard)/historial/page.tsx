@@ -27,7 +27,11 @@ export default async function HistorialPage() {
   const agrupados: Record<string, typeof registros> = {}
   for (const log of registros) {
     const fecha = new Date(log.created_at).toLocaleDateString('es-AR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      weekday: 'long', 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric',
+      timeZone: 'America/Argentina/Buenos_Aires' // <-- AGREGÁ ESTO
     })
     if (!agrupados[fecha]) agrupados[fecha] = []
     agrupados[fecha].push(log)
@@ -75,7 +79,9 @@ export default async function HistorialPage() {
                   const config = ACCIONES[log.accion] || ACCIONES['EDICION']
                   const Icon = config.icon
                   const hora = new Date(log.created_at).toLocaleTimeString('es-AR', {
-                    hour: '2-digit', minute: '2-digit'
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    timeZone: 'America/Argentina/Buenos_Aires' // <-- AGREGÁ ESTO
                   })
                   return (
                     <div key={log.id} className="flex items-center gap-5 px-7 py-4 hover:bg-slate-50/60 transition">
