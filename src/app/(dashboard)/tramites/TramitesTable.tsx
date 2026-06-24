@@ -64,19 +64,34 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw }: { 
   const tramitesFiltrados = useMemo(() => {
     return tramites
       .filter(t => {
+        // 1. Filtro de Responsable
         if (filtroResponsable !== 'todos' && t.creado_por !== filtroResponsable) return false
+        
+        // 2. Filtro de Estado
         if (filtroEstado !== 'todos' && t.estado !== filtroEstado) return false
-        if (busqueda && !t.tipo_tramite?.toLowerCase().includes(busqueda.toLowerCase()) && !t.clientes?.razon_social?.toLowerCase().includes(busqueda.toLowerCase())) return false
+        
+        // 3. BUSCADOR INTELIGENTE (Trámite + Cliente)
+        if (busqueda) {
+          const query = busqueda.toLowerCase()
+          const matchTramite = t.tipo_tramite?.toLowerCase().includes(query)
+          
+          // Buscamos el nombre del cliente en la lista externa para ver si coincide
+          const clie = clientes.find(c => c.id === t.cliente_id)
+          const matchCliente = clie?.razon_social?.toLowerCase().includes(query)
+          
+          // Si no coincide el trámite NI el cliente, lo ocultamos
+          if (!matchTramite && !matchCliente) return false
+        }
+  
         return true
       })
       .sort((a, b) => {
-        // Vencidos y urgentes primero
         if (!a.fecha_vencimiento && !b.fecha_vencimiento) return 0
         if (!a.fecha_vencimiento) return 1
         if (!b.fecha_vencimiento) return -1
         return diasRestantes(a.fecha_vencimiento) - diasRestantes(b.fecha_vencimiento)
       })
-  }, [tramites, filtroResponsable, filtroEstado, busqueda])
+  }, [tramites, clientes, filtroResponsable, filtroEstado, busqueda]) 
 
   const urgentes = tramites.filter(t => t.fecha_vencimiento && diasRestantes(t.fecha_vencimiento) <= 3 && t.estado !== 'finalizado').length
 
