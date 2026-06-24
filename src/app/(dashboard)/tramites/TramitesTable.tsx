@@ -204,7 +204,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw }: { 
               tramitesFiltrados.map((t: any) => {
                 // REEMPLAZÁ LO QUE HAYA AQUÍ ADENTRO POR ESTO:
                 const dias = t.fecha_vencimiento ? diasRestantes(t.fecha_vencimiento) : null
-                const esUrgente = dias !== null && dias <= 3 && t.estado !== 'finalizado'
+                const esUrgente = dias !== null && dias >= 0 && dias <= 3 && t.estado !== 'finalizado'
                 const totalNotas = comentariosRaw.filter((c: any) => c.tramite_id === t.id).length
                 
                 // ESTA ES LA CLAVE: Buscamos el nombre en la lista de clientes
