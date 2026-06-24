@@ -1,43 +1,32 @@
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
+import { UserPlus, Building2, Mail, Hash } from 'lucide-react'
+import ClientesTable from './ClientesTable'
 
 export default async function ClientesPage() {
   const supabase = createClient()
-  const { data: clientes } = await supabase.from('clientes').select('*').order('razon_social')
+  const { data: clientes } = await supabase
+    .from('clientes')
+    .select('*')
+    .order('razon_social')
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Clientes</h1>
-        <Link href="/clientes/nuevo" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-            + Nuevo Cliente
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-blue-600 mb-1">Estudio Grimalt</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Clientes</h1>
+          <p className="text-slate-400 text-sm mt-0.5">{clientes?.length || 0} clientes registrados</p>
+        </div>
+        <Link
+          href="/clientes/nuevo"
+          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-2xl text-xs font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/20"
+        >
+          <UserPlus size={14} /> Nuevo Cliente
         </Link>
       </div>
 
-      <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-gray-50 border-b text-gray-600 uppercase text-xs">
-            <tr>
-              <th className="px-6 py-4">Razón Social</th>
-              <th className="px-6 py-4">CUIT</th>
-              <th className="px-6 py-4">Email</th>
-              <th className="px-6 py-4">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {clientes?.map(cliente => (
-              <tr key={cliente.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-medium">{cliente.razon_social}</td>
-                <td className="px-6 py-4 text-gray-500">{cliente.cuit}</td>
-                <td className="px-6 py-4 text-gray-500">{cliente.email}</td>
-                <td className="px-6 py-4">
-                  <button className="text-blue-600 hover:underline">Ver ficha</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ClientesTable clientes={clientes || []} />
     </div>
   )
 }
