@@ -194,3 +194,34 @@ export async function updatePassword(formData: FormData) {
 
   redirect('/perfil?success=true')
 }
+// Editar Cliente
+export async function updateCliente(formData: FormData) {
+  const supabase = createClient()
+  const id = formData.get('id') as string
+
+  const data = {
+    razon_social: formData.get('razon_social') as string,
+    cuit: formData.get('cuit') as string,
+    email: formData.get('email') as string,
+    telefono: formData.get('telefono') as string,
+    direccion: formData.get('direccion') as string,
+  }
+
+  const { error } = await supabase.from('clientes').update(data).eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/clientes')
+  redirect('/clientes')
+}
+
+// Borrar Cliente
+export async function deleteCliente(formData: FormData) {
+  const supabase = createClient()
+  const id = formData.get('id') as string
+
+  const { error } = await supabase.from('clientes').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/clientes')
+  redirect('/clientes')
+}
