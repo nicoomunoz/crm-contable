@@ -22,7 +22,7 @@ export default async function TramitesPage() {
     <div className="space-y-6 px-4">
       <div className="flex justify-between items-end px-2">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 mb-1 leading-none italic">Estudio Grimalt</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 mb-1 leading-none">Estudio Grimalt</p>
           <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">Trámites</h1>
         </div>
         <Link href="/tramites/nuevo" className="bg-slate-950 text-white px-8 py-3.5 rounded-2xl font-black text-[11px] uppercase shadow-2xl hover:bg-blue-600 transition-all active:scale-95 tracking-widest">
