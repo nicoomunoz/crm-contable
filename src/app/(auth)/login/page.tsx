@@ -101,4 +101,9 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
       </div>
     </div>
   )
+// Solo necesitamos que cuando entre a la página de LOGIN, 
+// se asegure de borrar cualquier marca vieja por las dudas.
+if (typeof window !== 'undefined') {
+    sessionStorage.removeItem('estudio_session_active');
+}
 }
