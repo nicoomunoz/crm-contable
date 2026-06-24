@@ -111,7 +111,7 @@ export default async function DashboardPage() {
                         }`}>
                           {vencido ? 'Vencido' : hoyMismo ? 'Hoy' : `${dias}d`}
                         </span>
-                        <Link href="/tramites" className="text-slate-300 hover:text-slate-600 transition">
+                        <Link href="/tramites" className="text-slate-500 hover:text-slate-600 transition">
                           <ArrowRight size={16} />
                         </Link>
                       </div>
