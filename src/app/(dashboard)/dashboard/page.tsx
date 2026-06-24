@@ -69,7 +69,7 @@ export default async function DashboardPage() {
       {/* HEADER */}
       <div className="flex items-center justify-between border-b border-slate-200 pb-5">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 mb-1">Estudio Grimalt</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-blue-600 mb-1">Estudio Grimalt</p>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Hola, {nombreUsuario}</h1>
           <p className="text-slate-500 text-sm mt-0.5 font-medium capitalize">
             {new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -149,7 +149,7 @@ export default async function DashboardPage() {
             <div className="bg-red-50 border border-red-200 rounded-xl overflow-hidden">
               <div className="flex items-center gap-2 px-5 py-3 border-b border-red-200 bg-red-100">
                 <AlertTriangle size={13} className="text-red-600" />
-                <p className="text-xs font-black text-red-700 uppercase tracking-wider">{vencidos.length} Vencido{vencidos.length > 1 ? 's' : ''} — Requieren atención inmediata</p>
+                <p className="text-xs font-black text-red-700 uppercase tracking-wider">{vencidos.length} Vencido{vencidos.length > 1 ? 's' : ''} — Requieren rápida atención </p>
               </div>
               <div className="divide-y divide-red-100">
                 {vencidos.map(t => (
