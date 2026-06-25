@@ -314,7 +314,12 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                           {/* Asignar a responsable */}
                           <div className="px-4 py-2.5 border-t border-slate-50">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-wide mb-1.5">Asignar a</p>
-                            <form action={asignarTramite}>
+                            <form onSubmit={async (e) => {
+                              e.preventDefault()
+                              const formData = new FormData(e.currentTarget)
+                              await asignarTramite(formData)
+                              setMenuAbierto(null)
+                            }}>
                               <input type="hidden" name="id" value={t.id} />
                               <select
                                 name="asignado_a"
@@ -329,7 +334,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                               <button
                                 type="submit"
                                 className="w-full py-1.5 bg-blue-600 text-white text-[10px] font-black rounded-xl hover:bg-blue-700 transition uppercase tracking-wide"
-                                onClick={() => setMenuAbierto(null)}
                               >
                                 Asignar
                               </button>
