@@ -50,11 +50,20 @@ export default async function DashboardPage() {
 
   const porResponsable: Record<string, { pendiente: number, en_proceso: number, finalizado: number }> = {}
   tramites.forEach(t => {
-    const r = t.creado_por || 'Sin asignar'
-    if (!porResponsable[r]) porResponsable[r] = { pendiente: 0, en_proceso: 0, finalizado: 0 }
-    if (t.estado === 'pendiente') porResponsable[r].pendiente++
-    else if (t.estado === 'en_proceso') porResponsable[r].en_proceso++
-    else if (t.estado === 'finalizado') porResponsable[r].finalizado++
+    // Contar por creador
+    const creador = t.creado_por || 'Sin asignar'
+    if (!porResponsable[creador]) porResponsable[creador] = { pendiente: 0, en_proceso: 0, finalizado: 0 }
+    if (t.estado === 'pendiente') porResponsable[creador].pendiente++
+    else if (t.estado === 'en_proceso') porResponsable[creador].en_proceso++
+    else if (t.estado === 'finalizado') porResponsable[creador].finalizado++
+  
+    // También contar por asignado si es distinto al creador
+    if (t.asignado_a && t.asignado_a !== t.creado_por) {
+      if (!porResponsable[t.asignado_a]) porResponsable[t.asignado_a] = { pendiente: 0, en_proceso: 0, finalizado: 0 }
+      if (t.estado === 'pendiente') porResponsable[t.asignado_a].pendiente++
+      else if (t.estado === 'en_proceso') porResponsable[t.asignado_a].en_proceso++
+      else if (t.estado === 'finalizado') porResponsable[t.asignado_a].finalizado++
+    }
   })
 
   const todosVencimientos = [...vencidos, ...urgentes, ...proximos]
