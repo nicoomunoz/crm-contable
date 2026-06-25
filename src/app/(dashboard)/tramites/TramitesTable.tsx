@@ -3,6 +3,8 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { updateTramiteStatus, deleteTramite, createComentario, asignarTramite } from '@/app/actions'
 import { Clock, CheckCircle2, Circle, MoreHorizontal, Pencil, Trash2, MessageSquare, X, Send, AlertTriangle, ChevronDown } from 'lucide-react'
+import { createBrowserSupabaseClient } from '@/lib/supabase-browser'
+import { useRouter } from 'next/navigation'
 
 const ESTADOS = ['todos', 'pendiente', 'en_proceso', 'finalizado']
 
@@ -53,7 +55,36 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   }, [tramites])
   const [filtroResponsable, setFiltroResponsable] = useState('todos')
   const [filtroEstado, setFiltroEstado] = useState('todos')
-  const [busqueda, setBusqueda] = useState('')
+const [busqueda, setBusqueda] = useState('')
+
+  const router = useRouter()
+
+  useEffect(() => {
+    const supabase = createBrowserSupabaseClient()
+
+    const tramitesChannel = supabase
+      .channel('tramites-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tramites' },
+        () => { router.refresh() }
+      )
+      .subscribe()
+
+    const comentariosChannel = supabase
+      .channel('comentarios-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'comentarios' },
+        () => { router.refresh() }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(tramitesChannel)
+      supabase.removeChannel(comentariosChannel)
+    }
+  }, [])
 
   useEffect(() => {
     function handleClick() {
