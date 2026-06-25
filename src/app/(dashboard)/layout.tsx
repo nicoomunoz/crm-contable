@@ -57,7 +57,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
               {nombreUsuario.charAt(0).toUpperCase()}
             </div>
             <span className="text-xs font-bold text-slate-300 truncate flex-1">{nombreUsuario}</span>
-            <Notificaciones notificaciones={notificaciones || []} />
+            <Notificaciones notificaciones={notificaciones || []} nombreUsuario={nombreUsuario} />
           </div>
 
           <form action={signOut}>
