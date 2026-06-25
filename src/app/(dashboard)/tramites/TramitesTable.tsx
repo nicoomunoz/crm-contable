@@ -76,7 +76,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   const tramitesFiltrados = useMemo(() => {
     return tramites
       .filter(t => {
-        if (filtroResponsable !== 'todos' && t.creado_por !== filtroResponsable) return false
+        if (filtroResponsable !== 'todos' && t.creado_por !== filtroResponsable && t.asignado_a !== filtroResponsable) return false
         if (filtroEstado !== 'todos' && t.estado !== filtroEstado) return false
         if (busqueda) {
           const query = busqueda.toLowerCase()
