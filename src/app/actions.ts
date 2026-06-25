@@ -383,3 +383,64 @@ export async function marcarNotificacionLeida(formData: FormData) {
   revalidatePath('/tramites')
   revalidatePath('/dashboard')
 }
+
+
+//NUEVO TRAMITES VARIOS CLIENTES
+export async function createTramiteMultiple(formData: FormData) {
+  const supabase = createClient()
+  const usuario = await getNombreUsuario(supabase)
+
+  const clienteIds = formData.getAll('cliente_ids') as string[]
+  const tipo_tramite = formData.get('tipo_tramite') as string
+  const fecha_vencimiento = formData.get('fecha_vencimiento') as string || null
+  const observaciones = formData.get('observaciones') as string
+  const asignado_a = formData.get('asignado_a') as string || null
+
+  for (const cliente_id of clienteIds) {
+    const { data: nuevo, error } = await supabase.from('tramites').insert({
+      cliente_id,
+      tipo_tramite,
+      estado: 'pendiente',
+      fecha_vencimiento,
+      observaciones,
+      creado_por: usuario,
+      asignado_a,
+    }).select().single()
+
+    if (error) throw new Error(error.message)
+
+    if (observaciones?.trim()) {
+      await supabase.from('comentarios').insert({
+        tramite_id: nuevo?.id,
+        contenido: observaciones,
+        autor: usuario,
+      })
+    }
+
+    const { data: clienteData } = await supabase
+      .from('clientes')
+      .select('razon_social')
+      .eq('id', cliente_id)
+      .single()
+
+    if (asignado_a && asignado_a !== usuario) {
+      await supabase.from('notificaciones').insert({
+        para_usuario: asignado_a,
+        mensaje: `${usuario} te asignó el trámite "${tipo_tramite}" de ${clienteData?.razon_social || 'cliente'}`,
+        tramite_id: nuevo?.id,
+      })
+    }
+
+    await registrarAuditoria(supabase, {
+      usuario,
+      accion: 'CREACION',
+      detalle: `Creó "${tipo_tramite}" para ${clienteData?.razon_social || 'cliente desconocido'}${asignado_a ? ` — asignado a ${asignado_a}` : ''}`,
+      tramite_id: nuevo?.id,
+    })
+  }
+
+  revalidatePath('/tramites')
+  revalidatePath('/dashboard')
+  revalidatePath('/historial')
+  redirect('/tramites')
+}
