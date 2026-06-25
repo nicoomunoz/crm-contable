@@ -9,12 +9,14 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
   nombreUsuario: string 
 }) {
   const [abierto, setAbierto] = useState(false)
-  const [notificaciones, setNotificaciones] = useState(iniciales)
-  const noLeidas = notificaciones.filter(n => !n.leida).length
+  const [notificaciones, setNotificaciones] = useState<any[]>([])
+  const [montado, setMontado] = useState(false)
 
   useEffect(() => {
+    setNotificaciones(iniciales)
+    setMontado(true)
+
     const supabase = createBrowserSupabaseClient()
-  
     const channel = supabase
       .channel(`notif-${nombreUsuario}`)
       .on(
@@ -25,7 +27,7 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
           table: 'notificaciones',
         },
         (payload: any) => {
-          console.log('Payload recibido:', payload.new.para_usuario, '| Usuario actual:', nombreUsuario)
+          console.log('Payload recibido:', payload.new)
           if (payload.new.para_usuario === nombreUsuario) {
             setNotificaciones(prev => [payload.new, ...prev])
           }
@@ -34,11 +36,19 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
       .subscribe((status: any) => {
         console.log('Status:', status)
       })
-  
+
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [nombreUsuario])
+  }, [])
+
+  const noLeidas = notificaciones.filter(n => !n.leida).length
+
+  if (!montado) return (
+    <div className="w-9 h-9 flex items-center justify-center">
+      <Bell size={18} className="text-slate-400" />
+    </div>
+  )
 
   return (
     <div className="relative">
