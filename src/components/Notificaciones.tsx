@@ -19,7 +19,7 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
     const supabase = createBrowserSupabaseClient()
     console.log('nombreUsuario del componente:', nombreUsuario)
     const channel = supabase
-      .channel(`notif-${nombreUsuario}`)
+      .channel(`notif-${nombreUsuario}-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
