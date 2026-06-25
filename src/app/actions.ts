@@ -394,9 +394,10 @@ export async function createTramiteMultiple(formData: FormData) {
   const tipo_tramite = formData.get('tipo_tramite') as string
   const fecha_vencimiento = formData.get('fecha_vencimiento') as string || null
   const observaciones = formData.get('observaciones') as string
-  const asignado_a = formData.get('asignado_a') as string || null
 
   for (const cliente_id of clienteIds) {
+    const asignado_a = formData.get(`asignado_${cliente_id}`) as string || null
+
     const { data: nuevo, error } = await supabase.from('tramites').insert({
       cliente_id,
       tipo_tramite,
@@ -404,7 +405,7 @@ export async function createTramiteMultiple(formData: FormData) {
       fecha_vencimiento,
       observaciones,
       creado_por: usuario,
-      asignado_a,
+      asignado_a: asignado_a || null,
     }).select().single()
 
     if (error) throw new Error(error.message)
