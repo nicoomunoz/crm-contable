@@ -43,7 +43,14 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   const [cargando, setCargando] = useState(false)
   const [orden, setOrden] = useState<'vencimiento' | 'creacion'>('vencimiento')
 
-  const responsables = useMemo(() => ['todos', ...Array.from(new Set(tramites.map(t => t.creado_por).filter(Boolean)))], [tramites])
+  const responsables = useMemo(() => {
+  const nombres = new Set<string>()
+    tramites.forEach(t => {
+      if (t.creado_por) nombres.add(t.creado_por)
+      if (t.asignado_a) nombres.add(t.asignado_a)
+    })
+    return ['todos', ...Array.from(nombres).sort()]
+  }, [tramites])
   const [filtroResponsable, setFiltroResponsable] = useState('todos')
   const [filtroEstado, setFiltroEstado] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
