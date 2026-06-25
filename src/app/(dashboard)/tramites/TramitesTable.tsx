@@ -87,9 +87,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
         return true
       })
       .sort((a, b) => {
-        if (orden === 'creacion') {
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        }
+        if (orden === 'creacion') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         if (!a.fecha_vencimiento && !b.fecha_vencimiento) return 0
         if (!a.fecha_vencimiento) return 1
         if (!b.fecha_vencimiento) return -1
@@ -111,13 +109,13 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   return (
     <>
       {/* BARRA DE FILTROS */}
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="flex flex-wrap gap-2 items-center">
         <input
           type="text"
           placeholder="Buscar trámite o cliente..."
           value={busqueda}
           onChange={e => setBusqueda(e.target.value)}
-          className="flex-1 min-w-[200px] px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400 text-slate-700 placeholder:text-slate-300"
+          className="flex-1 min-w-[160px] px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400 text-slate-700 placeholder:text-slate-300"
         />
         <div className="relative">
           <select
@@ -131,7 +129,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
           </select>
           <ChevronDown size={13} className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" />
         </div>
-        <div className="flex gap-1.5 bg-white border border-slate-200 rounded-2xl p-1">
+        <div className="flex gap-1 bg-white border border-slate-200 rounded-2xl p-1 flex-wrap">
           {ESTADOS.map(e => (
             <button
               key={e}
@@ -150,7 +148,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
           ))}
         </div>
         {urgentes > 0 && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-100 px-4 py-2 rounded-2xl">
+          <div className="flex items-center gap-2 bg-red-50 border border-red-100 px-3 py-2 rounded-2xl">
             <AlertTriangle size={13} className="text-red-500" />
             <span className="text-red-500 text-[11px] font-black uppercase tracking-wide">{urgentes} urgente{urgentes > 1 ? 's' : ''}</span>
           </div>
@@ -158,22 +156,130 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
       </div>
 
       <div className="flex gap-1 bg-white border border-slate-200 rounded-2xl p-1 w-fit">
-        <button
-          onClick={() => setOrden('vencimiento')}
-          className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${orden === 'vencimiento' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}
-        >
+        <button onClick={() => setOrden('vencimiento')} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${orden === 'vencimiento' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}>
           Por vencimiento
         </button>
-        <button
-          onClick={() => setOrden('creacion')}
-          className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${orden === 'creacion' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}
-        >
+        <button onClick={() => setOrden('creacion')} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${orden === 'creacion' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}>
           Más recientes
         </button>
       </div>
 
-      {/* TABLA */}
-      <div className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-xl">
+      {/* VISTA MOBILE */}
+      <div className="md:hidden space-y-2">
+        {tramitesFiltrados.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-100 py-12 text-center">
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">No hay trámites que coincidan</p>
+          </div>
+        ) : (
+          tramitesFiltrados.map((t: any) => {
+            const dias = t.fecha_vencimiento ? diasRestantes(t.fecha_vencimiento) : null
+            const esUrgente = dias !== null && dias >= 0 && dias <= 3 && t.estado !== 'finalizado'
+            const totalNotas = comentariosRaw.filter((c: any) => c.tramite_id === t.id).length
+            const miCliente = clientes.find((c: any) => c.id === t.cliente_id)
+            const nombreClienteMostrable = miCliente ? miCliente.razon_social : 'CLIENTE'
+
+            return (
+              <div key={t.id} className={`bg-white rounded-2xl border px-4 py-3 space-y-2 ${esUrgente ? 'border-orange-200 bg-orange-50/20' : 'border-slate-100'}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider leading-none mb-0.5 truncate">{nombreClienteMostrable}</p>
+                    <p className="text-slate-800 font-black text-base leading-tight">{t.tipo_tramite}</p>
+                  </div>
+                  <span className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                    t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500' :
+                    t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500' :
+                    'bg-emerald-50 text-emerald-600'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      t.estado === 'pendiente' ? 'bg-orange-400' :
+                      t.estado === 'en_proceso' ? 'bg-blue-400' : 'bg-emerald-400'
+                    }`} />
+                    {t.estado.replace('_', ' ')}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 text-[11px] text-slate-400 font-semibold flex-wrap">
+                  <span>{t.creado_por || 'Admin'}</span>
+                  {t.asignado_a && t.asignado_a !== t.creado_por && (
+                    <span className="text-blue-500">→ {t.asignado_a}</span>
+                  )}
+                  {t.fecha_vencimiento && (
+                    <span className={dias !== null && dias < 0 ? 'text-red-500 font-black' : dias !== null && dias <= 3 ? 'text-orange-500 font-black' : ''}>
+                      {dias !== null && dias < 0 ? 'Vencido' : dias === 0 ? 'Hoy' : `${dias}d`} · {new Date(t.fecha_vencimiento).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-slate-50">
+                  <div className="flex gap-1">
+                    <form action={updateTramiteStatus}>
+                      <input type="hidden" name="id" value={t.id} />
+                      <input type="hidden" name="nuevoEstado" value="pendiente" />
+                      <button className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-orange-500 hover:bg-orange-50 transition">
+                        <Circle size={16} strokeWidth={2.5} />
+                      </button>
+                    </form>
+                    <form action={updateTramiteStatus}>
+                      <input type="hidden" name="id" value={t.id} />
+                      <input type="hidden" name="nuevoEstado" value="en_proceso" />
+                      <button className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-blue-600 hover:bg-blue-50 transition">
+                        <Clock size={16} strokeWidth={2.5} />
+                      </button>
+                    </form>
+                    <form action={updateTramiteStatus}>
+                      <input type="hidden" name="id" value={t.id} />
+                      <input type="hidden" name="nuevoEstado" value="finalizado" />
+                      <button className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 transition">
+                        <CheckCircle2 size={16} strokeWidth={2.5} />
+                      </button>
+                    </form>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => abrirDrawer(t)}
+                      className="relative h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition"
+                    >
+                      <MessageSquare size={16} className={totalNotas > 0 ? 'text-blue-500' : ''} />
+                      {totalNotas > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
+                          {totalNotas}
+                        </span>
+                      )}
+                    </button>
+                    <Link href={`/tramites/editar?id=${t.id}`} className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition">
+                      <Pencil size={15} />
+                    </Link>
+                    <button
+                      type="button"
+                      className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-red-400 hover:bg-red-50 transition"
+                      onClick={async () => {
+                        const formData = new FormData()
+                        formData.append('id', t.id)
+                        await deleteTramite(formData)
+                      }}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          })
+        )}
+        <div className="px-2 py-3 flex items-center justify-between">
+          <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">
+            {tramitesFiltrados.length} trámite{tramitesFiltrados.length !== 1 ? 's' : ''}
+          </p>
+          {(filtroResponsable !== 'todos' || filtroEstado !== 'todos' || busqueda) && (
+            <button onClick={() => { setFiltroResponsable('todos'); setFiltroEstado('todos'); setBusqueda('') }} className="text-[10px] text-blue-400 font-black uppercase tracking-wide">
+              Limpiar filtros
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* VISTA DESKTOP */}
+      <div className="hidden md:block bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-xl">
         <table className="w-full text-left">
           <thead className="border-b-2 border-slate-200">
             <tr className="text-slate-600 text-[10px] font-black uppercase tracking-widest">
@@ -203,12 +309,10 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
 
                 return (
                   <tr key={t.id} className={`transition-all group ${esUrgente ? 'bg-red-50/30 hover:bg-red-50/50' : 'hover:bg-slate-50/60'}`}>
-
                     <td className="px-8 py-5">
                       <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">{nombreClienteMostrable}</p>
                       <p className="text-slate-800 font-black text-base tracking-tight leading-snug">{t.tipo_tramite}</p>
                     </td>
-
                     <td className="px-6 py-5 text-center">
                       <div className="space-y-1">
                         <span className="inline-block bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wide px-3 py-1 rounded-full">
@@ -219,11 +323,9 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                         )}
                       </div>
                     </td>
-
                     <td className="px-6 py-5 text-center">
                       {t.fecha_vencimiento ? <BadgeVencimiento fecha={t.fecha_vencimiento} /> : <span className="text-slate-200 text-xs">—</span>}
                     </td>
-
                     <td className="px-6 py-5 text-center">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wide ${
                         t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500' :
@@ -237,7 +339,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                         {t.estado.replace('_', ' ')}
                       </span>
                     </td>
-
                     <td className="px-6 py-5">
                       <div className="flex gap-2 justify-center items-center">
                         <form action={updateTramiteStatus}>
@@ -263,7 +364,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                         </form>
                       </div>
                     </td>
-
                     <td className="px-6 py-5 text-center">
                       <button
                         onClick={() => abrirDrawer(t)}
@@ -277,8 +377,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                         )}
                       </button>
                     </td>
-
-                    {/* Menú ⋯ */}
                     <td className="px-4 py-5">
                       <button
                         onClick={(e) => {
@@ -291,7 +389,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                       >
                         <MoreHorizontal size={15} />
                       </button>
-
                       {menuAbierto === t.id && menuPos && (
                         <div
                           className="fixed z-[9999] bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-56 overflow-hidden"
@@ -305,7 +402,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                           >
                             <Pencil size={12} className="text-blue-400" /> Editar
                           </Link>
-
                           <div className="px-4 py-2.5 border-t border-slate-50">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-wide mb-1.5">Asignar a</p>
                             <form onSubmit={async (e) => {
@@ -325,15 +421,11 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                                   <option key={u.nombre} value={u.nombre}>{u.nombre}</option>
                                 ))}
                               </select>
-                              <button
-                                type="submit"
-                                className="w-full py-1.5 bg-blue-600 text-white text-[10px] font-black rounded-xl hover:bg-blue-700 transition uppercase tracking-wide"
-                              >
+                              <button type="submit" className="w-full py-1.5 bg-blue-600 text-white text-[10px] font-black rounded-xl hover:bg-blue-700 transition uppercase tracking-wide">
                                 Asignar
                               </button>
                             </form>
                           </div>
-
                           <div className="border-t border-slate-50">
                             <button
                               type="button"
@@ -357,7 +449,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
             )}
           </tbody>
         </table>
-
         <div className="px-8 py-4 border-t border-slate-50 flex items-center justify-between">
           <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">
             {tramitesFiltrados.length} trámite{tramitesFiltrados.length !== 1 ? 's' : ''}
@@ -378,15 +469,15 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40" onClick={cerrarDrawer} />
       )}
 
-      <div className={`fixed top-0 right-0 h-full w-[420px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${drawerTramite ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed top-0 right-0 h-full w-full md:w-[420px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${drawerTramite ? 'translate-x-0' : 'translate-x-full'}`}>
         {drawerTramite && (
           <>
-            <div className="px-8 py-6 border-b border-slate-100 flex items-start justify-between">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between">
               <div>
                 <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">
                   {clientes.find(c => c.id === drawerTramite.cliente_id)?.razon_social || 'ESTUDIO'}
                 </p>
-                <h2 className="text-slate-800 font-black text-xl tracking-tight">{drawerTramite.tipo_tramite}</h2>
+                <h2 className="text-slate-800 font-black text-lg tracking-tight">{drawerTramite.tipo_tramite}</h2>
                 <div className="flex items-center gap-3 mt-2">
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
                     drawerTramite.estado === 'pendiente' ? 'bg-orange-50 text-orange-500' :
@@ -407,7 +498,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-3">
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
               {cargando ? (
                 <p className="text-slate-300 text-xs text-center pt-8">Cargando...</p>
               ) : comentarios.length === 0 ? (
@@ -418,7 +509,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                 </div>
               ) : (
                 comentarios.map((c: any) => (
-                  <div key={c.id} className="bg-slate-50 rounded-2xl px-5 py-4">
+                  <div key={c.id} className="bg-slate-50 rounded-2xl px-4 py-3">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-[10px] font-black text-blue-500 uppercase tracking-wide">{c.autor}</p>
                       <p className="text-[9px] text-slate-300">{new Date(c.created_at).toLocaleString('es-AR')}</p>
@@ -429,7 +520,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
               )}
             </div>
 
-            <div className="px-8 py-6 border-t border-slate-100">
+            <div className="px-6 py-5 border-t border-slate-100">
               <form
                 onSubmit={async (e) => {
                   e.preventDefault()
