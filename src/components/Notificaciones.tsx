@@ -20,7 +20,6 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
     console.log('nombreUsuario del componente:', nombreUsuario)
     const channel = supabase
       .channel(`notif-${nombreUsuario}`)
-      .channel(`notif-${nombreUsuario}`)
       .on(
         'postgres_changes',
         {
