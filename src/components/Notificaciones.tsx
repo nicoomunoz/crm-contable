@@ -23,7 +23,7 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
           event: 'INSERT',
           schema: 'public',
           table: 'notificaciones',
-          filter: `para_usuario=eq.${nombreUsuario}`,
+         // filter: `para_usuario=eq.${nombreUsuario}`,
         },
         (payload) => {
           setNotificaciones(prev => [payload.new, ...prev])
