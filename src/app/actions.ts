@@ -311,3 +311,54 @@ export async function updatePassword(formData: FormData) {
   if (error) redirect(`/perfil?error=${error.message}`)
   redirect('/perfil?success=true')
 }
+// Asignar trámite a un responsable
+export async function asignarTramite(formData: FormData) {
+  const supabase = createClient()
+  const id = formData.get('id') as string
+  const asignado_a = formData.get('asignado_a') as string
+  const usuario = await getNombreUsuario(supabase)
+
+  const { data: tramite } = await supabase
+    .from('tramites')
+    .select('tipo_tramite, cliente_id')
+    .eq('id', id)
+    .single()
+
+  const { data: clienteData } = await supabase
+    .from('clientes')
+    .select('razon_social')
+    .eq('id', tramite?.cliente_id)
+    .single()
+
+  const { error } = await supabase
+    .from('tramites')
+    .update({ asignado_a })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
+
+  await supabase.from('notificaciones').insert({
+    para_usuario: asignado_a,
+    mensaje: `${usuario} te asignó el trámite "${tramite?.tipo_tramite}" de ${clienteData?.razon_social || 'cliente'}`,
+    tramite_id: id,
+  })
+
+  await registrarAuditoria(supabase, {
+    usuario,
+    accion: 'ASIGNACION',
+    detalle: `Asignó "${tramite?.tipo_tramite}" (${clienteData?.razon_social}) a ${asignado_a}`,
+    tramite_id: id,
+  })
+
+  revalidatePath('/tramites')
+  revalidatePath('/historial')
+}
+
+// Marcar notificación como leída
+export async function marcarNotificacionLeida(formData: FormData) {
+  const supabase = createClient()
+  const id = formData.get('id') as string
+  await supabase.from('notificaciones').update({ leida: true }).eq('id', id)
+  revalidatePath('/tramites')
+  revalidatePath('/dashboard')
+}
