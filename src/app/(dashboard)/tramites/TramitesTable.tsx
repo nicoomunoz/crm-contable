@@ -87,13 +87,15 @@ const [busqueda, setBusqueda] = useState('')
   }, [])
 
   useEffect(() => {
-    function handleClick() {
-      setMenuAbierto(null)
-      setMenuPos(null)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
+      function handleClick(e: MouseEvent) {
+        const target = e.target as HTMLElement
+        if (target.closest('[data-menu]')) return
+        setMenuAbierto(null)
+        setMenuPos(null)
+      }
+      document.addEventListener('mousedown', handleClick)
+      return () => document.removeEventListener('mousedown', handleClick)
+    }, [])
 
   async function abrirDrawer(t: any) {
     setDrawerTramite(t)
