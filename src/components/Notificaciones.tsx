@@ -76,11 +76,19 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
                         {new Date(n.created_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </p>
                       {!n.leida && (
-                        <form action={marcarNotificacionLeida}>
-                          <input type="hidden" name="id" value={n.id} />
-                          <button type="submit" className="text-[10px] font-black text-blue-500 hover:text-blue-700 uppercase tracking-wide">
-                            Marcar leída
-                          </button>
+                        <button
+                          onClick={async () => {
+                            const formData = new FormData()
+                            formData.append('id', n.id)
+                            await marcarNotificacionLeida(formData)
+                            setNotificaciones(prev =>
+                              prev.map(notif => notif.id === n.id ? { ...notif, leida: true } : notif)
+                            )
+                          }}
+                          className="text-[10px] font-black text-blue-500 hover:text-blue-700 uppercase tracking-wide"
+                        >
+                          Marcar leída
+                        </button>
                         </form>
                       )}
                     </div>
