@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { updateTramiteStatus, deleteTramite, createComentario, asignarTramite } from '@/app/actions'
 import { Clock, CheckCircle2, Circle, MoreHorizontal, Pencil, Trash2, MessageSquare, X, Send, AlertTriangle, ChevronDown } from 'lucide-react'
@@ -44,40 +44,37 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   const [nuevoComentario, setNuevoComentario] = useState('')
   const [cargando, setCargando] = useState(false)
   const [orden, setOrden] = useState<'vencimiento' | 'creacion'>('vencimiento')
+  const [filtroResponsable, setFiltroResponsable] = useState('todos')
+  const [filtroEstado, setFiltroEstado] = useState('todos')
+  const [busqueda, setBusqueda] = useState('')
+
+  const router = useRouter()
 
   const responsables = useMemo(() => {
-  const nombres = new Set<string>()
+    const nombres = new Set<string>()
     tramites.forEach(t => {
       if (t.creado_por) nombres.add(t.creado_por)
       if (t.asignado_a) nombres.add(t.asignado_a)
     })
     return ['todos', ...Array.from(nombres).sort()]
   }, [tramites])
-  const [filtroResponsable, setFiltroResponsable] = useState('todos')
-  const [filtroEstado, setFiltroEstado] = useState('todos')
-const [busqueda, setBusqueda] = useState('')
 
-  const router = useRouter()
-
+  // Realtime
   useEffect(() => {
     const supabase = createBrowserSupabaseClient()
 
     const tramitesChannel = supabase
       .channel('tramites-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tramites' },
-        () => { router.refresh() }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tramites' }, () => {
+        router.refresh()
+      })
       .subscribe()
 
     const comentariosChannel = supabase
       .channel('comentarios-realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'comentarios' },
-        () => { router.refresh() }
-      )
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comentarios' }, () => {
+        router.refresh()
+      })
       .subscribe()
 
     return () => {
@@ -86,16 +83,17 @@ const [busqueda, setBusqueda] = useState('')
     }
   }, [])
 
+  // Cerrar menú al hacer click afuera
   useEffect(() => {
-      function handleClick(e: MouseEvent) {
-        const target = e.target as HTMLElement
-        if (target.closest('[data-menu]')) return
-        setMenuAbierto(null)
-        setMenuPos(null)
-      }
-        document.addEventListener('click', handleClick)
-        return () => document.removeEventListener('click', handleClick)
-    }, [])
+    function handleClick(e: MouseEvent) {
+      const target = e.target as HTMLElement
+      if (target.closest('[data-menu]')) return
+      setMenuAbierto(null)
+      setMenuPos(null)
+    }
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [])
 
   async function abrirDrawer(t: any) {
     setDrawerTramite(t)
@@ -199,7 +197,7 @@ const [busqueda, setBusqueda] = useState('')
         <button onClick={() => setOrden('vencimiento')} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${orden === 'vencimiento' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}>
           Por vencimiento
         </button>
-        <button onClick={() => setOrden('creacion')} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${orden === 'creacion' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}>
+        <button onClick={() => setOrden('creacion')} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${orden === 'creacion' ? 'bg-slate-900 text-white' : 'text-slate.400 hover:text-slate-600'}`}>
           Más recientes
         </button>
       </div>
@@ -237,7 +235,6 @@ const [busqueda, setBusqueda] = useState('')
                     {t.estado.replace('_', ' ')}
                   </span>
                 </div>
-
                 <div className="flex items-center gap-3 text-[11px] text-slate-400 font-semibold flex-wrap">
                   <span>{t.creado_por || 'Admin'}</span>
                   {t.asignado_a && t.asignado_a !== t.creado_por && (
@@ -249,7 +246,6 @@ const [busqueda, setBusqueda] = useState('')
                     </span>
                   )}
                 </div>
-
                 <div className="flex items-center justify-between pt-1 border-t border-slate-50">
                   <div className="flex gap-1">
                     <form action={updateTramiteStatus}>
@@ -419,8 +415,8 @@ const [busqueda, setBusqueda] = useState('')
                     </td>
                     <td className="px-4 py-5">
                       <button
+                        data-menu
                         onClick={(e) => {
-                          e.stopPropagation()
                           const rect = e.currentTarget.getBoundingClientRect()
                           setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right })
                           setMenuAbierto(menuAbierto === t.id ? null : t.id)
@@ -434,7 +430,6 @@ const [busqueda, setBusqueda] = useState('')
                           data-menu
                           className="fixed z-[9999] bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-56 overflow-hidden"
                           style={{ top: menuPos.top, right: menuPos.right }}
-                          onClick={e => e.stopPropagation()}
                         >
                           <Link
                             href={`/tramites/editar?id=${t.id}`}
