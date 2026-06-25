@@ -1,5 +1,4 @@
 export const dynamic = 'force-dynamic'
-
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 import TramitesTable from './TramitesTable'
@@ -7,16 +6,25 @@ import TramitesTable from './TramitesTable'
 export default async function TramitesPage() {
   const supabase = createClient()
 
-  // Traemos Trámites, Clientes y la lista de todos los comentarios (solo el tramite_id)
-  const [tramitesRes, clientesRes, comentariosRes] = await Promise.all([
+  const { data: { user } } = await supabase.auth.getUser()
+  const nombreUsuarioActual = user?.user_metadata?.full_name || user?.email?.split('@')[0] || ''
+
+  const [tramitesRes, clientesRes, comentariosRes, usuariosRes] = await Promise.all([
     supabase.from('tramites').select('*').order('created_at', { ascending: false }),
     supabase.from('clientes').select('id, razon_social'),
-    supabase.from('comentarios').select('tramite_id') // Solo pedimos el ID del trámite para contar
+    supabase.from('comentarios').select('tramite_id'),
+    supabase.from('usuarios').select('nombre, es_jefe').order('nombre'),
   ])
 
   const tramites = tramitesRes.data || []
   const clientes = clientesRes.data || []
   const todosLosComentarios = comentariosRes.data || []
+  const usuarios = usuariosRes.data || []
+
+  const tramitesConCliente = tramites.map(t => ({
+    ...t,
+    clientes: clientes.find(c => c.id === t.cliente_id) || null
+  }))
 
   return (
     <div className="space-y-6 px-4">
@@ -29,12 +37,12 @@ export default async function TramitesPage() {
           + Iniciar Nuevo
         </Link>
       </div>
-
-      {/* Le pasamos la lista de comentarios al componente de la tabla */}
-      <TramitesTable 
-        tramites={tramites} 
-        clientes={clientes} 
-        comentariosRaw={todosLosComentarios} 
+      <TramitesTable
+        tramites={tramitesConCliente}
+        clientes={clientes}
+        comentariosRaw={todosLosComentarios}
+        usuarios={usuarios}
+        nombreUsuarioActual={nombreUsuarioActual}
       />
     </div>
   )
