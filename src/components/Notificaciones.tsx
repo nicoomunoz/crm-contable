@@ -1,11 +1,40 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Bell, X, CheckCheck } from 'lucide-react'
+import { createClient } from '@/lib/supabase'
 import { marcarNotificacionLeida } from '@/app/actions'
 
-export default function Notificaciones({ notificaciones }: { notificaciones: any[] }) {
+export default function Notificaciones({ notificaciones: iniciales, nombreUsuario }: { 
+  notificaciones: any[],
+  nombreUsuario: string 
+}) {
   const [abierto, setAbierto] = useState(false)
+  const [notificaciones, setNotificaciones] = useState(iniciales)
   const noLeidas = notificaciones.filter(n => !n.leida).length
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    const channel = supabase
+      .channel('notificaciones-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notificaciones',
+          filter: `para_usuario=eq.${nombreUsuario}`,
+        },
+        (payload) => {
+          setNotificaciones(prev => [payload.new, ...prev])
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [nombreUsuario])
 
   return (
     <div className="relative">
