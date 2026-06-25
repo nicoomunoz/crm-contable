@@ -348,11 +348,14 @@ export async function asignarTramite(formData: FormData) {
 
   if (error) throw new Error(error.message)
 
-  await supabase.from('notificaciones').insert({
-    para_usuario: asignado_a,
-    mensaje: `${usuario} te asignó el trámite "${tramite?.tipo_tramite}" de ${clienteData?.razon_social || 'cliente'}`,
-    tramite_id: id,
-  })
+  const { error: notifError } = await supabase.from('notificaciones').insert({
+      para_usuario: asignado_a,
+      mensaje: `${usuario} te asignó el trámite "${tramite?.tipo_tramite}" de ${clienteData?.razon_social || 'cliente'}`,
+      tramite_id: id,
+    })
+  
+  if (notifError) console.error('Error insertando notificación:', notifError)
+  else console.log('Notificación insertada para:', asignado_a)
 
   await registrarAuditoria(supabase, {
     usuario,
