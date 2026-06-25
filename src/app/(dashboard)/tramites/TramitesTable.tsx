@@ -93,8 +93,8 @@ const [busqueda, setBusqueda] = useState('')
         setMenuAbierto(null)
         setMenuPos(null)
       }
-      document.addEventListener('mousedown', handleClick)
-      return () => document.removeEventListener('mousedown', handleClick)
+        document.addEventListener('click', handleClick)
+        return () => document.removeEventListener('click', handleClick)
     }, [])
 
   async function abrirDrawer(t: any) {
@@ -434,7 +434,7 @@ const [busqueda, setBusqueda] = useState('')
                           data-menu
                           className="fixed z-[9999] bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-56 overflow-hidden"
                           style={{ top: menuPos.top, right: menuPos.right }}
-                          onMouseDown={e => e.stopPropagation()}
+                          onClick={e => e.stopPropagation()}
                         >
                           <Link
                             href={`/tramites/editar?id=${t.id}`}
