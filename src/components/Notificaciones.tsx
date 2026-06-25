@@ -18,7 +18,6 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
   
     const supabase = createBrowserSupabaseClient()
   
-    // Realtime
     const channel = supabase
       .channel(`notif-${nombreUsuario}-${Math.random().toString(36).slice(2)}`)
       .on(
@@ -36,7 +35,6 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
       )
       .subscribe()
   
-    // Polling cada 15 segundos como fallback
     const interval = setInterval(async () => {
       const { data } = await supabase
         .from('notificaciones')
@@ -78,7 +76,7 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
       {abierto && (
         <>
           <div className="fixed inset-0 z-[9998]" onClick={() => setAbierto(false)} />
-          <div className="fixed bottom-16 left-64 z-[9999] w-80 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="fixed bottom-20 left-4 right-4 md:left-64 md:right-auto md:w-80 md:bottom-16 z-[9999] bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
               <p className="text-xs font-black text-slate-700 uppercase tracking-wide">Notificaciones</p>
               <button onClick={() => setAbierto(false)} className="text-slate-400 hover:text-slate-600">
