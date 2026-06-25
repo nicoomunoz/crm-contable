@@ -15,9 +15,10 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
   useEffect(() => {
     setNotificaciones(iniciales)
     setMontado(true)
-
+  
     const supabase = createBrowserSupabaseClient()
-    console.log('nombreUsuario del componente:', nombreUsuario)
+  
+    // Realtime
     const channel = supabase
       .channel(`notif-${nombreUsuario}-${Math.random().toString(36).slice(2)}`)
       .on(
@@ -28,20 +29,27 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
           table: 'notificaciones',
         },
         (payload: any) => {
-          console.log('Payload para_usuario:', JSON.stringify(payload.new.para_usuario))
-          console.log('nombreUsuario:', JSON.stringify(nombreUsuario))
-          console.log('Son iguales:', payload.new.para_usuario === nombreUsuario)
           if (payload.new.para_usuario === nombreUsuario) {
             setNotificaciones(prev => [payload.new, ...prev])
           }
         }
       )
-      .subscribe((status: any) => {
-        console.log('Status:', status)
-      })
-
+      .subscribe()
+  
+    // Polling cada 15 segundos como fallback
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('notificaciones')
+        .select('*')
+        .eq('para_usuario', nombreUsuario)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      if (data) setNotificaciones(data)
+    }, 15000)
+  
     return () => {
       supabase.removeChannel(channel)
+      clearInterval(interval)
     }
   }, [])
 
