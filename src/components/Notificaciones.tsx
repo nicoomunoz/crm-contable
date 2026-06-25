@@ -24,7 +24,7 @@ export default function Notificaciones({ notificaciones }: { notificaciones: any
       {abierto && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setAbierto(false)} />
-          <div className="absolute left-0 top-12 z-50 w-80 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="fixed bottom-20 left-60 z-50 w-80 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
               <p className="text-xs font-black text-slate-700 uppercase tracking-wide">Notificaciones</p>
               <button onClick={() => setAbierto(false)} className="text-slate-400 hover:text-slate-600">
