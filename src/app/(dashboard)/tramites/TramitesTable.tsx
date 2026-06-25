@@ -84,16 +84,13 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   }, [])
 
   // Cerrar menú al hacer click afuera
-    useEffect(() => {
-      function handleClick(e: MouseEvent) {
-        setMenuAbierto(null)
-        setMenuPos(null)
-      }
-      document.addEventListener('mousedown', handleClick)
-      return () => document.removeEventListener('mousedown', handleClick)
-    }, [])
-    document.addEventListener('click', handleClick)
-    return () => document.removeEventListener('click', handleClick)
+  useEffect(() => {
+    function handleClick() {
+      setMenuAbierto(null)
+      setMenuPos(null)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
   async function abrirDrawer(t: any) {
@@ -198,7 +195,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
         <button onClick={() => setOrden('vencimiento')} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${orden === 'vencimiento' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}>
           Por vencimiento
         </button>
-        <button onClick={() => setOrden('creacion')} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${orden === 'creacion' ? 'bg-slate-900 text-white' : 'text-slate.400 hover:text-slate-600'}`}>
+        <button onClick={() => setOrden('creacion')} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${orden === 'creacion' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}>
           Más recientes
         </button>
       </div>
@@ -428,9 +425,9 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                       </button>
                       {menuAbierto === t.id && menuPos && (
                         <div
-                          data-menu
                           className="fixed z-[9999] bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-56 overflow-hidden"
                           style={{ top: menuPos.top, right: menuPos.right }}
+                          onMouseDown={e => e.stopPropagation()}
                         >
                           <Link
                             href={`/tramites/editar?id=${t.id}`}
@@ -452,6 +449,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                                 name="asignado_a"
                                 className="w-full text-xs border border-slate-200 rounded-xl px-2 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 mb-1.5"
                                 defaultValue={t.asignado_a || ''}
+                                onMouseDown={e => e.stopPropagation()}
                               >
                                 <option value="">Sin asignar</option>
                                 {usuarios.map((u: any) => (
