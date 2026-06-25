@@ -2,14 +2,13 @@ import { ReactNode } from 'react'
 import { signOut } from '@/app/actions'
 import { Users, LayoutDashboard, Briefcase, LogOut, Settings } from 'lucide-react'
 import Link from 'next/link'
-import SessionGuard from '@/components/SessionGuard' // <-- Importar
 import { History } from 'lucide-react'
 
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen bg-gray-50 text-slate-900 font-sans">
-      <SessionGuard />
+     
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col fixed h-full border-r border-slate-800">
         <div className="p-6 border-b border-slate-800 flex items-center gap-3">
