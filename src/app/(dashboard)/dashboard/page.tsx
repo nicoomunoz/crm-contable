@@ -8,10 +8,13 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   const nombreUsuario = user?.user_metadata?.full_name?.split(' ')[0] || 'Usuario'
 
-  const [clientesRes, tramitesRes] = await Promise.all([
+  const [clientesRes, tramitesRes, notifRes] = await Promise.all([
     supabase.from('clientes').select('id', { count: 'exact' }),
-    supabase.from('tramites').select('id, tipo_tramite, estado, fecha_vencimiento, creado_por, cliente_id, clientes(razon_social)')
+    supabase.from('tramites').select('id, tipo_tramite, estado, fecha_vencimiento, creado_por, cliente_id, clientes(razon_social)'),
+    supabase.from('notificaciones').select('id, mensaje, created_at').eq('para_usuario', nombreUsuario).eq('leida', false).order('created_at', { ascending: false })
   ])
+  
+  const notificacionesNoLeidas = notifRes.data || []
 
   const totalClientes = clientesRes.count || 0
   const tramites = tramitesRes.data || []
@@ -84,6 +87,22 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+      {/* Banner notificaciones */}
+      {notificacionesNoLeidas.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-4 flex items-start gap-4">
+          <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-xs font-black">{notificacionesNoLeidas.length}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-black text-blue-800">
+              Tenés {notificacionesNoLeidas.length} notificación{notificacionesNoLeidas.length > 1 ? 'es' : ''} nueva{notificacionesNoLeidas.length > 1 ? 's' : ''}
+            </p>
+            <p className="text-xs text-blue-600 mt-0.5 truncate">
+              {notificacionesNoLeidas[0].mensaje}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* MÉTRICAS — fila compacta accionable */}
       <div className="grid grid-cols-5 gap-3">
