@@ -417,7 +417,7 @@ const [busqueda, setBusqueda] = useState('')
                     </td>
                     <td className="px-4 py-5">
                       <button
-                        onClick={(e) => {
+                        onMouseDown={(e) => {
                           e.stopPropagation()
                           const rect = e.currentTarget.getBoundingClientRect()
                           setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right })
