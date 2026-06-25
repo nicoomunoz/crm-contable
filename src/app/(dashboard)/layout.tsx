@@ -1,9 +1,10 @@
 import { ReactNode } from 'react'
 import { signOut } from '@/app/actions'
-import { Users, LayoutDashboard, Briefcase, LogOut, Settings, History } from 'lucide-react'
+import { Users, LayoutDashboard, Briefcase, LogOut, Settings, History, Search } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import Notificaciones from '@/components/Notificaciones'
+import BuscadorGlobal from '@/components/BuscadorGlobal'
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = createClient()
@@ -30,6 +31,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
+          <div className="mb-3">
+            <BuscadorGlobal />
+          </div>
           {[
             { href: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Inicio / Resúmen' },
             { href: '/clientes', icon: <Users size={20} />, label: 'Clientes' },
@@ -74,6 +78,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <span className="text-white font-bold text-sm">GRIMALT</span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => {}}
+            className="flex items-center justify-center w-9 h-9 rounded-xl hover:bg-slate-800 transition text-slate-400"
+          >
+            <Search size={18} />
+          </button>
           <Notificaciones notificaciones={notificaciones || []} nombreUsuario={nombreUsuario} />
           <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-[11px] font-black">
             {nombreUsuario.charAt(0).toUpperCase()}
