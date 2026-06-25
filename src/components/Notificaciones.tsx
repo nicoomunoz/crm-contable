@@ -16,7 +16,7 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
     const supabase = createBrowserSupabaseClient()
   
     const channel = supabase
-      .channel(`notif-${nombreUsuario}`)
+      .channel(`notif-${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -24,21 +24,21 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
           schema: 'public',
           table: 'notificaciones',
         },
-        (payload) => {
-          console.log('Nueva notificación recibida:', payload)
+        (payload: any) => {
+          console.log('Payload recibido:', payload.new.para_usuario, '| Usuario actual:', nombreUsuario)
           if (payload.new.para_usuario === nombreUsuario) {
             setNotificaciones(prev => [payload.new, ...prev])
           }
         }
       )
-      .subscribe((status) => {
-        console.log('Realtime status:', status)
+      .subscribe((status: any) => {
+        console.log('Status:', status)
       })
   
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [nombreUsuario])
 
   return (
     <div className="relative">
