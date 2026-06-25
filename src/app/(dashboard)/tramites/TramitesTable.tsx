@@ -48,6 +48,12 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   const [filtroResponsable, setFiltroResponsable] = useState('todos')
   const [filtroEstado, setFiltroEstado] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
+  // Leer query de la URL al cargar
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search)
+  const q = params.get('q')
+  if (q) setBusqueda(q)
+}, [])
 
   const router = useRouter()
 
