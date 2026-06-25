@@ -14,29 +14,31 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient()
-
+  
     const channel = supabase
-      .channel('notificaciones-realtime')
+      .channel(`notif-${nombreUsuario}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'notificaciones',
-         // filter: `para_usuario=eq.${nombreUsuario}`,
         },
         (payload) => {
-          setNotificaciones(prev => [payload.new, ...prev])
+          console.log('Nueva notificación recibida:', payload)
+          if (payload.new.para_usuario === nombreUsuario) {
+            setNotificaciones(prev => [payload.new, ...prev])
+          }
         }
       )
       .subscribe((status) => {
         console.log('Realtime status:', status)
       })
-
+  
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [nombreUsuario])
+  }, [])
 
   return (
     <div className="relative">
