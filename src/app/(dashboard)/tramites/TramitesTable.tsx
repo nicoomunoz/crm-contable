@@ -438,7 +438,22 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw }: { 
             </div>
 
             <div className="px-8 py-6 border-t border-slate-100">
-              <form action={createComentario} onSubmit={() => setNuevoComentario('')}>
+              <form
+                  action={createComentario}
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    if (!nuevoComentario.trim()) return
+                    const formData = new FormData()
+                    formData.append('tramite_id', drawerTramite.id)
+                    formData.append('contenido', nuevoComentario)
+                    await createComentario(formData)
+                    setNuevoComentario('')
+                    // Recargar comentarios
+                    const res = await fetch(`/api/comentarios?tramite_id=${drawerTramite.id}`)
+                    const data = await res.json()
+                    setComentarios(data)
+                  }}
+                >
                 <input type="hidden" name="tramite_id" value={drawerTramite.id} />
                 <div className="flex gap-3 items-end">
                   <textarea
