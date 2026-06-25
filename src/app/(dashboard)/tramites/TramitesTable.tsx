@@ -36,11 +36,11 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   nombreUsuarioActual: string
 }) {
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null)
+  const [menuPos, setMenuPos] = useState<{ top: number, right: number } | null>(null)
   const [drawerTramite, setDrawerTramite] = useState<any | null>(null)
   const [comentarios, setComentarios] = useState<any[]>([])
   const [nuevoComentario, setNuevoComentario] = useState('')
   const [cargando, setCargando] = useState(false)
-  const menuRef = useRef<HTMLTableCellElement>(null)
   const [orden, setOrden] = useState<'vencimiento' | 'creacion'>('vencimiento')
 
   const responsables = useMemo(() => ['todos', ...Array.from(new Set(tramites.map(t => t.creado_por).filter(Boolean)))], [tramites])
@@ -49,10 +49,9 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuAbierto(null)
-      }
+    function handleClick() {
+      setMenuAbierto(null)
+      setMenuPos(null)
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -205,36 +204,26 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                 return (
                   <tr key={t.id} className={`transition-all group ${esUrgente ? 'bg-red-50/30 hover:bg-red-50/50' : 'hover:bg-slate-50/60'}`}>
 
-                    {/* Trámite */}
                     <td className="px-8 py-5">
-                      <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">
-                        {nombreClienteMostrable}
-                      </p>
-                      <p className="text-slate-800 font-black text-base tracking-tight leading-snug">
-                        {t.tipo_tramite}
-                      </p>
+                      <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">{nombreClienteMostrable}</p>
+                      <p className="text-slate-800 font-black text-base tracking-tight leading-snug">{t.tipo_tramite}</p>
                     </td>
 
-                    {/* Responsable */}
                     <td className="px-6 py-5 text-center">
                       <div className="space-y-1">
                         <span className="inline-block bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wide px-3 py-1 rounded-full">
                           {t.creado_por || 'Admin'}
                         </span>
                         {t.asignado_a && t.asignado_a !== t.creado_por && (
-                          <p className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
-                            → {t.asignado_a}
-                          </p>
+                          <p className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">→ {t.asignado_a}</p>
                         )}
                       </div>
                     </td>
 
-                    {/* Vencimiento */}
                     <td className="px-6 py-5 text-center">
                       {t.fecha_vencimiento ? <BadgeVencimiento fecha={t.fecha_vencimiento} /> : <span className="text-slate-200 text-xs">—</span>}
                     </td>
 
-                    {/* Estado */}
                     <td className="px-6 py-5 text-center">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wide ${
                         t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500' :
@@ -243,46 +232,42 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                       }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${
                           t.estado === 'pendiente' ? 'bg-orange-400' :
-                          t.estado === 'en_proceso' ? 'bg-blue-400' :
-                          'bg-emerald-400'
+                          t.estado === 'en_proceso' ? 'bg-blue-400' : 'bg-emerald-400'
                         }`} />
                         {t.estado.replace('_', ' ')}
                       </span>
                     </td>
 
-                    {/* Cambiar estado */}
                     <td className="px-6 py-5">
                       <div className="flex gap-2 justify-center items-center">
                         <form action={updateTramiteStatus}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="pendiente" />
-                          <button title="Marcar pendiente" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-orange-500 hover:bg-orange-50 hover:border-orange-200 border-2 border-transparent transition-all active:scale-90">
+                          <button title="Marcar pendiente" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-orange-500 hover:bg-orange-50 border-2 border-transparent transition-all active:scale-90">
                             <Circle size={18} strokeWidth={2.5} />
                           </button>
                         </form>
                         <form action={updateTramiteStatus}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="en_proceso" />
-                          <button title="Marcar en proceso" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 border-2 border-transparent transition-all active:scale-90">
+                          <button title="Marcar en proceso" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 border-2 border-transparent transition-all active:scale-90">
                             <Clock size={18} strokeWidth={2.5} />
                           </button>
                         </form>
                         <form action={updateTramiteStatus}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="finalizado" />
-                          <button title="Marcar finalizado" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 border-2 border-transparent transition-all active:scale-90">
+                          <button title="Marcar finalizado" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 border-2 border-transparent transition-all active:scale-90">
                             <CheckCircle2 size={18} strokeWidth={2.5} />
                           </button>
                         </form>
                       </div>
                     </td>
 
-                    {/* Notas */}
                     <td className="px-6 py-5 text-center">
                       <button
                         onClick={() => abrirDrawer(t)}
                         className="group relative flex items-center justify-center h-10 w-16 mx-auto bg-white border-2 border-slate-300 rounded-xl hover:border-blue-600 hover:shadow-md transition-all active:scale-95 shadow-sm"
-                        title="Ver notas"
                       >
                         <MessageSquare size={18} className={totalNotas > 0 ? 'text-blue-500' : 'text-slate-300'} />
                         {totalNotas > 0 && (
@@ -294,15 +279,25 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                     </td>
 
                     {/* Menú ⋯ */}
-                    <td className="px-4 py-5 relative" ref={menuAbierto === t.id ? menuRef : null}>
+                    <td className="px-4 py-5">
                       <button
-                        onClick={() => setMenuAbierto(menuAbierto === t.id ? null : t.id)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const rect = e.currentTarget.getBoundingClientRect()
+                          setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right })
+                          setMenuAbierto(menuAbierto === t.id ? null : t.id)
+                        }}
                         className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition"
                       >
                         <MoreHorizontal size={15} />
                       </button>
-                      {menuAbierto === t.id && (
-                        <div className="absolute right-4 bottom-0 z-50 bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-56 overflow-hidden">
+
+                      {menuAbierto === t.id && menuPos && (
+                        <div
+                          className="fixed z-[9999] bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-56 overflow-hidden"
+                          style={{ top: menuPos.top, right: menuPos.right }}
+                          onMouseDown={e => e.stopPropagation()}
+                        >
                           <Link
                             href={`/tramites/editar?id=${t.id}`}
                             className="flex items-center gap-3 px-4 py-2.5 text-xs font-black text-slate-600 hover:bg-slate-50 transition uppercase"
@@ -311,7 +306,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                             <Pencil size={12} className="text-blue-400" /> Editar
                           </Link>
 
-                          {/* Asignar a responsable */}
                           <div className="px-4 py-2.5 border-t border-slate-50">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-wide mb-1.5">Asignar a</p>
                             <form onSubmit={async (e) => {
@@ -357,7 +351,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                         </div>
                       )}
                     </td>
-
                   </tr>
                 )
               })
@@ -381,12 +374,10 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
         </div>
       </div>
 
-      {/* OVERLAY */}
       {drawerTramite && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40" onClick={cerrarDrawer} />
       )}
 
-      {/* DRAWER */}
       <div className={`fixed top-0 right-0 h-full w-[420px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${drawerTramite ? 'translate-x-0' : 'translate-x-full'}`}>
         {drawerTramite && (
           <>
@@ -395,9 +386,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                 <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">
                   {clientes.find(c => c.id === drawerTramite.cliente_id)?.razon_social || 'ESTUDIO'}
                 </p>
-                <h2 className="text-slate-800 font-black text-xl tracking-tight">
-                  {drawerTramite.tipo_tramite}
-                </h2>
+                <h2 className="text-slate-800 font-black text-xl tracking-tight">{drawerTramite.tipo_tramite}</h2>
                 <div className="flex items-center gap-3 mt-2">
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
                     drawerTramite.estado === 'pendiente' ? 'bg-orange-50 text-orange-500' :
