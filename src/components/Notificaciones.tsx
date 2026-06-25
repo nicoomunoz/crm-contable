@@ -28,7 +28,9 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
           table: 'notificaciones',
         },
         (payload: any) => {
-          console.log('Payload recibido:', payload.new)
+          console.log('Payload para_usuario:', JSON.stringify(payload.new.para_usuario))
+          console.log('nombreUsuario:', JSON.stringify(nombreUsuario))
+          console.log('Son iguales:', payload.new.para_usuario === nombreUsuario)
           if (payload.new.para_usuario === nombreUsuario) {
             setNotificaciones(prev => [payload.new, ...prev])
           }
