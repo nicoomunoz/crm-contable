@@ -16,7 +16,6 @@ function diasRestantes(fecha: string) {
 function BadgeVencimiento({ fecha }: { fecha: string }) {
   const dias = diasRestantes(fecha)
   const fechaFormateada = new Date(fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-
   return (
     <div className="flex flex-col items-center gap-1">
       {dias < 0 && <span className="inline-flex items-center gap-1 text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-full"><AlertTriangle size={9} /> Vencido</span>}
@@ -29,13 +28,13 @@ function BadgeVencimiento({ fecha }: { fecha: string }) {
   )
 }
 
-export default function TramitesTable({ tramites, clientes, comentariosRaw, usuarios, nombreUsuarioActual }: { 
-  tramites: any[], 
-  clientes: any[], 
+export default function TramitesTable({ tramites, clientes, comentariosRaw, usuarios, nombreUsuarioActual }: {
+  tramites: any[],
+  clientes: any[],
   comentariosRaw: any[],
   usuarios: any[],
   nombreUsuarioActual: string
-})
+}) {
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null)
   const [drawerTramite, setDrawerTramite] = useState<any | null>(null)
   const [comentarios, setComentarios] = useState<any[]>([])
@@ -44,7 +43,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   const menuRef = useRef<HTMLTableCellElement>(null)
   const [orden, setOrden] = useState<'vencimiento' | 'creacion'>('vencimiento')
 
-  // Filtros
   const responsables = useMemo(() => ['todos', ...Array.from(new Set(tramites.map(t => t.creado_por).filter(Boolean)))], [tramites])
   const [filtroResponsable, setFiltroResponsable] = useState('todos')
   const [filtroEstado, setFiltroEstado] = useState('todos')
@@ -75,40 +73,33 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
     setNuevoComentario('')
   }
 
-  // Filtrar y ordenar
   const tramitesFiltrados = useMemo(() => {
     return tramites
       .filter(t => {
-        // 1. Filtro de Responsable
         if (filtroResponsable !== 'todos' && t.creado_por !== filtroResponsable) return false
-        
-        // 2. Filtro de Estado
         if (filtroEstado !== 'todos' && t.estado !== filtroEstado) return false
-        
-        // 3. BUSCADOR INTELIGENTE (Trámite + Cliente)
         if (busqueda) {
           const query = busqueda.toLowerCase()
           const matchTramite = t.tipo_tramite?.toLowerCase().includes(query)
-          
-          // Buscamos el nombre del cliente en la lista externa para ver si coincide
           const clie = clientes.find(c => c.id === t.cliente_id)
           const matchCliente = clie?.razon_social?.toLowerCase().includes(query)
-          
-          // Si no coincide el trámite NI el cliente, lo ocultamos
           if (!matchTramite && !matchCliente) return false
         }
-  
         return true
       })
       .sort((a, b) => {
         if (orden === 'creacion') {
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         }
-        // Por vencimiento: sin fecha van al final
         if (!a.fecha_vencimiento && !b.fecha_vencimiento) return 0
         if (!a.fecha_vencimiento) return 1
         if (!b.fecha_vencimiento) return -1
-        return diasRestantes(a.fecha_vencimiento) - diasRestantes(b.fecha_vencimiento)
+        const diasA = diasRestantes(a.fecha_vencimiento)
+        const diasB = diasRestantes(b.fecha_vencimiento)
+        if (diasA < 0 && diasB >= 0) return 1
+        if (diasB < 0 && diasA >= 0) return -1
+        if (diasA < 0 && diasB < 0) return diasB - diasA
+        return diasA - diasB
       })
   }, [tramites, clientes, filtroResponsable, filtroEstado, busqueda, orden])
 
@@ -122,8 +113,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
     <>
       {/* BARRA DE FILTROS */}
       <div className="flex flex-wrap gap-3 items-center">
-
-        {/* Búsqueda */}
         <input
           type="text"
           placeholder="Buscar trámite o cliente..."
@@ -131,8 +120,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
           onChange={e => setBusqueda(e.target.value)}
           className="flex-1 min-w-[200px] px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400 text-slate-700 placeholder:text-slate-300"
         />
-
-        {/* Filtro responsable */}
         <div className="relative">
           <select
             value={filtroResponsable}
@@ -145,8 +132,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
           </select>
           <ChevronDown size={13} className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" />
         </div>
-
-        {/* Filtro estado */}
         <div className="flex gap-1.5 bg-white border border-slate-200 rounded-2xl p-1">
           {ESTADOS.map(e => (
             <button
@@ -165,8 +150,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
             </button>
           ))}
         </div>
-
-        {/* Badge urgentes */}
         {urgentes > 0 && (
           <div className="flex items-center gap-2 bg-red-50 border border-red-100 px-4 py-2 rounded-2xl">
             <AlertTriangle size={13} className="text-red-500" />
@@ -174,7 +157,8 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
           </div>
         )}
       </div>
-      <div className="flex gap-1 bg-white border border-slate-200 rounded-2xl p-1">
+
+      <div className="flex gap-1 bg-white border border-slate-200 rounded-2xl p-1 w-fit">
         <button
           onClick={() => setOrden('vencimiento')}
           className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition ${orden === 'vencimiento' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}
@@ -212,23 +196,19 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
               </tr>
             ) : (
               tramitesFiltrados.map((t: any) => {
-                // REEMPLAZÁ LO QUE HAYA AQUÍ ADENTRO POR ESTO:
                 const dias = t.fecha_vencimiento ? diasRestantes(t.fecha_vencimiento) : null
                 const esUrgente = dias !== null && dias >= 0 && dias <= 3 && t.estado !== 'finalizado'
                 const totalNotas = comentariosRaw.filter((c: any) => c.tramite_id === t.id).length
-                
-                // ESTA ES LA CLAVE: Buscamos el nombre en la lista de clientes
                 const miCliente = clientes.find((c: any) => c.id === t.cliente_id)
-                const nombreClienteMostrable = miCliente ? miCliente.razon_social : "CLIENTE"
+                const nombreClienteMostrable = miCliente ? miCliente.razon_social : 'CLIENTE'
 
                 return (
                   <tr key={t.id} className={`transition-all group ${esUrgente ? 'bg-red-50/30 hover:bg-red-50/50' : 'hover:bg-slate-50/60'}`}>
 
                     {/* Trámite */}
-                  
                     <td className="px-8 py-5">
                       <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">
-                        {nombreClienteMostrable} {/* <-- CAMBIAMOS t.clientes... por esta variable */}
+                        {nombreClienteMostrable}
                       </p>
                       <p className="text-slate-800 font-black text-base tracking-tight leading-snug">
                         {t.tipo_tramite}
@@ -236,11 +216,11 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                     </td>
 
                     {/* Responsable */}
-                    <td className="px-6 py-5">
-                      <div className="text-center space-y-1">
-                        <p className="text-xs font-black text-slate-600 uppercase tracking-tight">
+                    <td className="px-6 py-5 text-center">
+                      <div className="space-y-1">
+                        <span className="inline-block bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wide px-3 py-1 rounded-full">
                           {t.creado_por || 'Admin'}
-                        </p>
+                        </span>
                         {t.asignado_a && t.asignado_a !== t.creado_por && (
                           <p className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
                             → {t.asignado_a}
@@ -270,46 +250,30 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                       </span>
                     </td>
 
-                    {/* Cambiar estado: MÁS GRANDES Y MARCADOS */}
+                    {/* Cambiar estado */}
                     <td className="px-6 py-5">
                       <div className="flex gap-2 justify-center items-center">
-                        
-                        {/* Botón PENDIENTE (Círculo) */}
                         <form action={updateTramiteStatus}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="pendiente" />
-                          <button 
-                            title="Marcar pendiente" 
-                            className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-orange-500 hover:bg-orange-50 hover:border-orange-200 border-2 border-transparent transition-all active:scale-90"
-                          >
+                          <button title="Marcar pendiente" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-orange-500 hover:bg-orange-50 hover:border-orange-200 border-2 border-transparent transition-all active:scale-90">
                             <Circle size={18} strokeWidth={2.5} />
                           </button>
                         </form>
-                    
-                        {/* Botón EN PROCESO (Reloj) */}
                         <form action={updateTramiteStatus}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="en_proceso" />
-                          <button 
-                            title="Marcar en proceso" 
-                            className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 border-2 border-transparent transition-all active:scale-90"
-                          >
+                          <button title="Marcar en proceso" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 border-2 border-transparent transition-all active:scale-90">
                             <Clock size={18} strokeWidth={2.5} />
                           </button>
                         </form>
-                    
-                        {/* Botón FINALIZADO (Check) */}
                         <form action={updateTramiteStatus}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="finalizado" />
-                          <button 
-                            title="Marcar finalizado" 
-                            className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 border-2 border-transparent transition-all active:scale-90"
-                          >
+                          <button title="Marcar finalizado" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 border-2 border-transparent transition-all active:scale-90">
                             <CheckCircle2 size={18} strokeWidth={2.5} />
                           </button>
                         </form>
-                    
                       </div>
                     </td>
 
@@ -320,14 +284,9 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                         className="group relative flex items-center justify-center h-10 w-16 mx-auto bg-white border-2 border-slate-300 rounded-xl hover:border-blue-600 hover:shadow-md transition-all active:scale-95 shadow-sm"
                         title="Ver notas"
                       >
-                        <MessageSquare 
-                          size={18} 
-                          className={totalNotas > 0 ? "text-blue-500" : "text-slate-300"} 
-                        />
-                        
-                        {/* EL GLOBITO AZUL NITIDO */}
+                        <MessageSquare size={18} className={totalNotas > 0 ? 'text-blue-500' : 'text-slate-300'} />
                         {totalNotas > 0 && (
-                          <span className="absolute -top-2 -right-1 bg-blue-600 text-white text-[11px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-lg antialiased tabular-nums leading-none ring-1 ring-blue-600/10">
+                          <span className="absolute -top-2 -right-1 bg-blue-600 text-white text-[11px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
                             {totalNotas}
                           </span>
                         )}
@@ -343,7 +302,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                         <MoreHorizontal size={15} />
                       </button>
                       {menuAbierto === t.id && (
-                        <div className="absolute right-4 top-12 z-50 bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-36 overflow-hidden">
+                        <div className="absolute right-4 top-12 z-50 bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-48 overflow-hidden">
                           <Link
                             href={`/tramites/editar?id=${t.id}`}
                             className="flex items-center gap-3 px-4 py-2.5 text-xs font-black text-slate-600 hover:bg-slate-50 transition uppercase"
@@ -351,8 +310,8 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                           >
                             <Pencil size={12} className="text-blue-400" /> Editar
                           </Link>
-                          
-                          {/* Asignar — visible para todos */}
+
+                          {/* Asignar a responsable */}
                           <div className="px-4 py-2.5 border-t border-slate-50">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-wide mb-1.5">Asignar a</p>
                             <form action={asignarTramite}>
@@ -376,18 +335,21 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                               </button>
                             </form>
                           </div>
-                          <button
-                            type="button"
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-black text-red-400 hover:bg-red-50 transition uppercase"
-                            onClick={async () => {
-                              setMenuAbierto(null)
-                              const formData = new FormData()
-                              formData.append('id', t.id)
-                              await deleteTramite(formData)
-                            }}
-                          >
-                            <Trash2 size={12} /> Borrar
-                          </button>
+
+                          <div className="border-t border-slate-50">
+                            <button
+                              type="button"
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-black text-red-400 hover:bg-red-50 transition uppercase"
+                              onClick={async () => {
+                                setMenuAbierto(null)
+                                const formData = new FormData()
+                                formData.append('id', t.id)
+                                await deleteTramite(formData)
+                              }}
+                            >
+                              <Trash2 size={12} /> Borrar
+                            </button>
+                          </div>
                         </div>
                       )}
                     </td>
@@ -399,7 +361,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
           </tbody>
         </table>
 
-        {/* Footer con conteo */}
         <div className="px-8 py-4 border-t border-slate-50 flex items-center justify-between">
           <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">
             {tramitesFiltrados.length} trámite{tramitesFiltrados.length !== 1 ? 's' : ''}
@@ -428,7 +389,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
             <div className="px-8 py-6 border-b border-slate-100 flex items-start justify-between">
               <div>
                 <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">
-                  {drawerTramite.clientes?.razon_social || 'ESTUDIO'}
+                  {clientes.find(c => c.id === drawerTramite.cliente_id)?.razon_social || 'ESTUDIO'}
                 </p>
                 <h2 className="text-slate-800 font-black text-xl tracking-tight">
                   {drawerTramite.tipo_tramite}
@@ -455,7 +416,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
 
             <div className="flex-1 overflow-y-auto px-8 py-6 space-y-3">
               {cargando ? (
-                <p className="text-slate-300 text-xs italic text-center pt-8">Cargando...</p>
+                <p className="text-slate-300 text-xs text-center pt-8">Cargando...</p>
               ) : comentarios.length === 0 ? (
                 <div className="text-center py-16">
                   <MessageSquare size={28} className="text-slate-200 mx-auto mb-3" />
@@ -477,22 +438,19 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
 
             <div className="px-8 py-6 border-t border-slate-100">
               <form
-                  action={createComentario}
-                  onSubmit={async (e) => {
-                    e.preventDefault()
-                    if (!nuevoComentario.trim()) return
-                    const formData = new FormData()
-                    formData.append('tramite_id', drawerTramite.id)
-                    formData.append('contenido', nuevoComentario)
-                    await createComentario(formData)
-                    setNuevoComentario('')
-                    // Recargar comentarios
-                    const res = await fetch(`/api/comentarios?tramite_id=${drawerTramite.id}`)
-                    const data = await res.json()
-                    setComentarios(data)
-                  }}
-                >
-                <input type="hidden" name="tramite_id" value={drawerTramite.id} />
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  if (!nuevoComentario.trim()) return
+                  const formData = new FormData()
+                  formData.append('tramite_id', drawerTramite.id)
+                  formData.append('contenido', nuevoComentario)
+                  await createComentario(formData)
+                  setNuevoComentario('')
+                  const res = await fetch(`/api/comentarios?tramite_id=${drawerTramite.id}`)
+                  const data = await res.json()
+                  setComentarios(data)
+                }}
+              >
                 <div className="flex gap-3 items-end">
                   <textarea
                     name="contenido"
