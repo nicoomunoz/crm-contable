@@ -10,7 +10,7 @@ export default async function DashboardPage() {
 
   const [clientesRes, tramitesRes, notifRes] = await Promise.all([
     supabase.from('clientes').select('id', { count: 'exact' }),
-    supabase.from('tramites').select('id, tipo_tramite, estado, fecha_vencimiento, creado_por, cliente_id, clientes(razon_social)'),
+    supabase.from('tramites').select('id, tipo_tramite, estado, fecha_vencimiento, creado_por, asignado_a, cliente_id, clientes(razon_social)')
     supabase.from('notificaciones').select('id, mensaje, created_at').eq('para_usuario', nombreUsuario).eq('leida', false).order('created_at', { ascending: false })
   ])
 
