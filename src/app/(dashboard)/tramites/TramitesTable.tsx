@@ -84,13 +84,14 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   }, [])
 
   // Cerrar menú al hacer click afuera
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      const target = e.target as HTMLElement
-      if (target.closest('[data-menu]')) return
-      setMenuAbierto(null)
-      setMenuPos(null)
-    }
+    useEffect(() => {
+      function handleClick(e: MouseEvent) {
+        setMenuAbierto(null)
+        setMenuPos(null)
+      }
+      document.addEventListener('mousedown', handleClick)
+      return () => document.removeEventListener('mousedown', handleClick)
+    }, [])
     document.addEventListener('click', handleClick)
     return () => document.removeEventListener('click', handleClick)
   }, [])
@@ -415,8 +416,8 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                     </td>
                     <td className="px-4 py-5">
                       <button
-                        data-menu
                         onClick={(e) => {
+                          e.stopPropagation()
                           const rect = e.currentTarget.getBoundingClientRect()
                           setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right })
                           setMenuAbierto(menuAbierto === t.id ? null : t.id)
