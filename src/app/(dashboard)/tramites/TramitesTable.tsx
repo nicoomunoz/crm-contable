@@ -431,6 +431,7 @@ const [busqueda, setBusqueda] = useState('')
                       </button>
                       {menuAbierto === t.id && menuPos && (
                         <div
+                          data-menu
                           className="fixed z-[9999] bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-56 overflow-hidden"
                           style={{ top: menuPos.top, right: menuPos.right }}
                           onMouseDown={e => e.stopPropagation()}
