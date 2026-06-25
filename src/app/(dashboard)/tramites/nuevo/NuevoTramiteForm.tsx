@@ -5,6 +5,7 @@ import { createTramiteMultiple } from '@/app/actions'
 function NuevoTramiteForm({ clientes, usuarios }: { clientes: any[], usuarios: any[] }) {
   const [busqueda, setBusqueda] = useState('')
   const [seleccionados, setSeleccionados] = useState<string[]>([])
+  const [asignaciones, setAsignaciones] = useState<Record<string, string>>({})
 
   const clientesFiltrados = clientes.filter(c =>
     c.razon_social?.toLowerCase().includes(busqueda.toLowerCase())
@@ -24,6 +25,10 @@ function NuevoTramiteForm({ clientes, usuarios }: { clientes: any[], usuarios: a
     }
   }
 
+  function setAsignacion(clienteId: string, usuario: string) {
+    setAsignaciones(prev => ({ ...prev, [clienteId]: usuario }))
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
@@ -34,6 +39,18 @@ function NuevoTramiteForm({ clientes, usuarios }: { clientes: any[], usuarios: a
 
       <form action={createTramiteMultiple} className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm space-y-6">
 
+        {/* Tipo de trámite */}
+        <div>
+          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Tipo de Trámite</label>
+          <input
+            name="tipo_tramite"
+            placeholder="Ej: Liquidación IVA, Certificación, Alta AFIP"
+            required
+            className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 text-sm font-semibold text-slate-700"
+          />
+        </div>
+
+        {/* Selector de clientes */}
         <div>
           <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
             Clientes {seleccionados.length > 0 && <span className="text-blue-500">({seleccionados.length} seleccionados)</span>}
@@ -72,38 +89,48 @@ function NuevoTramiteForm({ clientes, usuarios }: { clientes: any[], usuarios: a
                   checked={seleccionados.includes(c.id)}
                   className="w-4 h-4 rounded accent-blue-600"
                 />
-                <span className="text-sm font-semibold text-slate-700">{c.razon_social}</span>
+                <span className="text-sm font-semibold text-slate-700 flex-1">{c.razon_social}</span>
               </div>
             ))}
             {clientesFiltrados.length === 0 && (
               <div className="px-4 py-6 text-center text-slate-400 text-xs">No hay clientes que coincidan</div>
             )}
           </div>
-          {seleccionados.map(id => (
-            <input key={id} type="hidden" name="cliente_ids" value={id} />
-          ))}
         </div>
 
-        <div>
-          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Tipo de Trámite</label>
-          <input
-            name="tipo_tramite"
-            placeholder="Ej: Liquidación IVA, Certificación, Alta AFIP"
-            required
-            className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 text-sm font-semibold text-slate-700"
-          />
-        </div>
+        {/* Asignaciones por cliente */}
+        {seleccionados.length > 0 && (
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">
+              Asignar responsable por cliente
+            </label>
+            <div className="space-y-2">
+              {seleccionados.map(id => {
+                const cliente = clientes.find(c => c.id === id)
+                return (
+                  <div key={id} className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5">
+                    <p className="text-sm font-bold text-slate-700 flex-1 truncate">{cliente?.razon_social}</p>
+                    <select
+                      value={asignaciones[id] || ''}
+                      onChange={e => setAsignacion(id, e.target.value)}
+                      className="text-xs border border-slate-200 rounded-xl px-2 py-1.5 text-slate-600 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    >
+                      <option value="">Sin asignar</option>
+                      {usuarios.map((u: any) => (
+                        <option key={u.nombre} value={u.nombre}>{u.nombre}</option>
+                      ))}
+                    </select>
+                    {/* Inputs hidden para enviar cliente_id y su asignado */}
+                    <input type="hidden" name="cliente_ids" value={id} />
+                    <input type="hidden" name={`asignado_${id}`} value={asignaciones[id] || ''} />
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
-        <div>
-          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Asignar a</label>
-          <select name="asignado_a" className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-slate-50 text-sm font-semibold text-slate-700">
-            <option value="">Sin asignar</option>
-            {usuarios.map((u: any) => (
-              <option key={u.nombre} value={u.nombre}>{u.nombre}</option>
-            ))}
-          </select>
-        </div>
-
+        {/* Vencimiento */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Vencimiento</label>
@@ -121,6 +148,7 @@ function NuevoTramiteForm({ clientes, usuarios }: { clientes: any[], usuarios: a
           </div>
         </div>
 
+        {/* Observaciones */}
         <div>
           <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Observaciones</label>
           <textarea
