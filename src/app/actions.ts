@@ -100,8 +100,14 @@ export async function createTramite(formData: FormData) {
     asignado_a,
   }
 
-  const { data: nuevo, error } = await supabase.from('tramites').insert(data).select().single()
-  if (error) throw new Error(error.message)
+  // Si tiene observaciones, guardarlas también como comentario
+  if (data.observaciones && data.observaciones.trim() !== '') {
+    await supabase.from('comentarios').insert({
+      tramite_id: nuevo?.id,
+      contenido: data.observaciones,
+      autor: usuario,
+    })
+  }
 
   const { data: cliente } = await supabase
     .from('clientes')
