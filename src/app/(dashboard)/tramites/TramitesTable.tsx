@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { updateTramiteStatus, deleteTramite, createComentario, asignarTramite } from '@/app/actions'
 import { Clock, CheckCircle2, Circle, MoreHorizontal, Pencil, Trash2, MessageSquare, X, Send, AlertTriangle, ChevronDown } from 'lucide-react'
@@ -44,37 +44,40 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   const [nuevoComentario, setNuevoComentario] = useState('')
   const [cargando, setCargando] = useState(false)
   const [orden, setOrden] = useState<'vencimiento' | 'creacion'>('vencimiento')
-  const [filtroResponsable, setFiltroResponsable] = useState('todos')
-  const [filtroEstado, setFiltroEstado] = useState('todos')
-  const [busqueda, setBusqueda] = useState('')
-
-  const router = useRouter()
 
   const responsables = useMemo(() => {
-    const nombres = new Set<string>()
+  const nombres = new Set<string>()
     tramites.forEach(t => {
       if (t.creado_por) nombres.add(t.creado_por)
       if (t.asignado_a) nombres.add(t.asignado_a)
     })
     return ['todos', ...Array.from(nombres).sort()]
   }, [tramites])
+  const [filtroResponsable, setFiltroResponsable] = useState('todos')
+  const [filtroEstado, setFiltroEstado] = useState('todos')
+const [busqueda, setBusqueda] = useState('')
 
-  // Realtime
+  const router = useRouter()
+
   useEffect(() => {
     const supabase = createBrowserSupabaseClient()
 
     const tramitesChannel = supabase
       .channel('tramites-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tramites' }, () => {
-        router.refresh()
-      })
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tramites' },
+        () => { router.refresh() }
+      )
       .subscribe()
 
     const comentariosChannel = supabase
       .channel('comentarios-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comentarios' }, () => {
-        router.refresh()
-      })
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'comentarios' },
+        () => { router.refresh() }
+      )
       .subscribe()
 
     return () => {
@@ -83,7 +86,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
     }
   }, [])
 
-  // Cerrar menú al hacer click afuera
   useEffect(() => {
     function handleClick() {
       setMenuAbierto(null)
@@ -233,6 +235,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                     {t.estado.replace('_', ' ')}
                   </span>
                 </div>
+
                 <div className="flex items-center gap-3 text-[11px] text-slate-400 font-semibold flex-wrap">
                   <span>{t.creado_por || 'Admin'}</span>
                   {t.asignado_a && t.asignado_a !== t.creado_por && (
@@ -244,6 +247,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                     </span>
                   )}
                 </div>
+
                 <div className="flex items-center justify-between pt-1 border-t border-slate-50">
                   <div className="flex gap-1">
                     <form action={updateTramiteStatus}>
@@ -449,7 +453,6 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                                 name="asignado_a"
                                 className="w-full text-xs border border-slate-200 rounded-xl px-2 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 mb-1.5"
                                 defaultValue={t.asignado_a || ''}
-                                onMouseDown={e => e.stopPropagation()}
                               >
                                 <option value="">Sin asignar</option>
                                 {usuarios.map((u: any) => (
