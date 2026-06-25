@@ -29,7 +29,9 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
           setNotificaciones(prev => [payload.new, ...prev])
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Realtime status:', status)
+      })
 
     return () => {
       supabase.removeChannel(channel)
