@@ -100,7 +100,9 @@ export async function createTramite(formData: FormData) {
     asignado_a,
   }
 
-  // Si tiene observaciones, guardarlas también como comentario
+  const { data: nuevo, error } = await supabase.from('tramites').insert(data).select().single()
+  if (error) throw new Error(error.message)
+
   if (data.observaciones && data.observaciones.trim() !== '') {
     await supabase.from('comentarios').insert({
       tramite_id: nuevo?.id,
@@ -115,7 +117,6 @@ export async function createTramite(formData: FormData) {
     .eq('id', data.cliente_id)
     .single()
 
-  // Notificar al asignado si es distinto al creador
   if (asignado_a && asignado_a !== usuario) {
     await supabase.from('notificaciones').insert({
       para_usuario: asignado_a,
