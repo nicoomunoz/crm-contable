@@ -14,7 +14,7 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
   const noLeidas = notificaciones.filter(n => !n.leida).length
 
   useEffect(() => {
-    const supabase = createClient()
+    const supabase = createBrowserSupabaseClient()
 
     const channel = supabase
       .channel('notificaciones-realtime')
