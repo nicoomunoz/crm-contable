@@ -7,6 +7,11 @@ import { deleteCliente } from '@/app/actions'
 export default function ClientesTable({ clientes }: { clientes: any[] }) {
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null)
   const [busqueda, setBusqueda] = useState('')
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search)
+  const q = params.get('q')
+  if (q) setBusqueda(q)
+}, [])
   const [fichaCliente, setFichaCliente] = useState<any | null>(null)
   const menuRef = useRef<HTMLTableCellElement>(null)
 
