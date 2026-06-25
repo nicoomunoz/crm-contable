@@ -39,45 +39,43 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
 }) {
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null)
   const [menuPos, setMenuPos] = useState<{ top: number, right: number } | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const [drawerTramite, setDrawerTramite] = useState<any | null>(null)
   const [comentarios, setComentarios] = useState<any[]>([])
   const [nuevoComentario, setNuevoComentario] = useState('')
   const [cargando, setCargando] = useState(false)
   const [orden, setOrden] = useState<'vencimiento' | 'creacion'>('vencimiento')
+  const [filtroResponsable, setFiltroResponsable] = useState('todos')
+  const [filtroEstado, setFiltroEstado] = useState('todos')
+  const [busqueda, setBusqueda] = useState('')
+
+  const router = useRouter()
 
   const responsables = useMemo(() => {
-  const nombres = new Set<string>()
+    const nombres = new Set<string>()
     tramites.forEach(t => {
       if (t.creado_por) nombres.add(t.creado_por)
       if (t.asignado_a) nombres.add(t.asignado_a)
     })
     return ['todos', ...Array.from(nombres).sort()]
   }, [tramites])
-  const [filtroResponsable, setFiltroResponsable] = useState('todos')
-  const [filtroEstado, setFiltroEstado] = useState('todos')
-const [busqueda, setBusqueda] = useState('')
 
-  const router = useRouter()
-
+  // Realtime
   useEffect(() => {
     const supabase = createBrowserSupabaseClient()
 
     const tramitesChannel = supabase
       .channel('tramites-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tramites' },
-        () => { router.refresh() }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tramites' }, () => {
+        router.refresh()
+      })
       .subscribe()
 
     const comentariosChannel = supabase
       .channel('comentarios-realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'comentarios' },
-        () => { router.refresh() }
-      )
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comentarios' }, () => {
+        router.refresh()
+      })
       .subscribe()
 
     return () => {
@@ -86,8 +84,10 @@ const [busqueda, setBusqueda] = useState('')
     }
   }, [])
 
+  // Cerrar menú al hacer click afuera usando ref
   useEffect(() => {
-    function handleClick() {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && menuRef.current.contains(e.target as Node)) return
       setMenuAbierto(null)
       setMenuPos(null)
     }
@@ -235,7 +235,6 @@ const [busqueda, setBusqueda] = useState('')
                     {t.estado.replace('_', ' ')}
                   </span>
                 </div>
-
                 <div className="flex items-center gap-3 text-[11px] text-slate-400 font-semibold flex-wrap">
                   <span>{t.creado_por || 'Admin'}</span>
                   {t.asignado_a && t.asignado_a !== t.creado_por && (
@@ -247,7 +246,6 @@ const [busqueda, setBusqueda] = useState('')
                     </span>
                   )}
                 </div>
-
                 <div className="flex items-center justify-between pt-1 border-t border-slate-50">
                   <div className="flex gap-1">
                     <form action={updateTramiteStatus}>
@@ -417,8 +415,7 @@ const [busqueda, setBusqueda] = useState('')
                     </td>
                     <td className="px-4 py-5">
                       <button
-                        onMouseDown={(e) => {
-                          e.stopPropagation()
+                        onClick={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect()
                           setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right })
                           setMenuAbierto(menuAbierto === t.id ? null : t.id)
@@ -429,9 +426,9 @@ const [busqueda, setBusqueda] = useState('')
                       </button>
                       {menuAbierto === t.id && menuPos && (
                         <div
+                          ref={menuRef}
                           className="fixed z-[9999] bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-56 overflow-hidden"
                           style={{ top: menuPos.top, right: menuPos.right }}
-                          onMouseDown={e => e.stopPropagation()}
                         >
                           <Link
                             href={`/tramites/editar?id=${t.id}`}
@@ -453,7 +450,6 @@ const [busqueda, setBusqueda] = useState('')
                                 name="asignado_a"
                                 className="w-full text-xs border border-slate-200 rounded-xl px-2 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 mb-1.5"
                                 defaultValue={t.asignado_a || ''}
-                                onMouseDown={e => e.stopPropagation()}
                               >
                                 <option value="">Sin asignar</option>
                                 {usuarios.map((u: any) => (
