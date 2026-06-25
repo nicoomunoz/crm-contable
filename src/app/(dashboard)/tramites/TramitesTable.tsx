@@ -453,6 +453,7 @@ const [busqueda, setBusqueda] = useState('')
                                 name="asignado_a"
                                 className="w-full text-xs border border-slate-200 rounded-xl px-2 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 mb-1.5"
                                 defaultValue={t.asignado_a || ''}
+                                onMouseDown={e => e.stopPropagation()}
                               >
                                 <option value="">Sin asignar</option>
                                 {usuarios.map((u: any) => (
