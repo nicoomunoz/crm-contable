@@ -1,303 +1,120 @@
-import { createClient } from '@/lib/supabase'
+import { ReactNode } from 'react'
+import { signOut } from '@/app/actions'
+import { Users, LayoutDashboard, Briefcase, LogOut, Settings, History } from 'lucide-react'
 import Link from 'next/link'
-import { Clock, Users, CheckCircle2, ArrowRight, FileText, UserPlus, AlertTriangle, TrendingUp } from 'lucide-react'
+import { createClient } from '@/lib/supabase'
+import Notificaciones from '@/components/Notificaciones'
 
-export default async function DashboardPage() {
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
-  const nombreUsuario = user?.user_metadata?.full_name?.split(' ')[0] || 'Usuario'
+  const nombreUsuario = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario'
 
-  const [clientesRes, tramitesRes, notifRes] = await Promise.all([
-    supabase.from('clientes').select('id', { count: 'exact' }),
-    supabase.from('tramites').select('id, tipo_tramite, estado, fecha_vencimiento, creado_por, cliente_id, clientes(razon_social)'),
-    supabase.from('notificaciones').select('id, mensaje, created_at').eq('para_usuario', nombreUsuario).eq('leida', false).order('created_at', { ascending: false })
-  ])
-  
-  const notificacionesNoLeidas = notifRes.data || []
-
-  const totalClientes = clientesRes.count || 0
-  const tramites = tramitesRes.data || []
-
-  const hoy = new Date()
-  hoy.setHours(0, 0, 0, 0)
-
-  function diasRestantes(fecha: string) {
-    return Math.ceil((new Date(fecha).getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
-  }
-
-  const pendientes = tramites.filter(t => t.estado === 'pendiente').length
-  const enProceso = tramites.filter(t => t.estado === 'en_proceso').length
-  const finalizados = tramites.filter(t => t.estado === 'finalizado').length
-  const total = tramites.length
-  const porcentajeCompletado = total > 0 ? Math.round((finalizados / total) * 100) : 0
-
-  // Vencidos (no finalizados)
-  const vencidos = tramites.filter(t => {
-    if (!t.fecha_vencimiento || t.estado === 'finalizado') return false
-    return diasRestantes(t.fecha_vencimiento) < 0
-  })
-
-  // Urgentes: vencen hoy o en los próximos 3 días (no finalizados)
-  const urgentes = tramites.filter(t => {
-    if (!t.fecha_vencimiento || t.estado === 'finalizado') return false
-    const dias = diasRestantes(t.fecha_vencimiento)
-    return dias >= 0 && dias <= 3
-  })
-
-  // Próximos 7 días (no finalizados, no vencidos, no urgentes)
-  const proximos = tramites.filter(t => {
-    if (!t.fecha_vencimiento || t.estado === 'finalizado') return false
-    const dias = diasRestantes(t.fecha_vencimiento)
-    return dias > 3 && dias <= 7
-  })
-
-  // Resumen por responsable
-  const porResponsable: Record<string, { pendiente: number, en_proceso: number, finalizado: number }> = {}
-  tramites.forEach(t => {
-    const r = t.creado_por || 'Sin asignar'
-    if (!porResponsable[r]) porResponsable[r] = { pendiente: 0, en_proceso: 0, finalizado: 0 }
-    if (t.estado === 'pendiente') porResponsable[r].pendiente++
-    else if (t.estado === 'en_proceso') porResponsable[r].en_proceso++
-    else if (t.estado === 'finalizado') porResponsable[r].finalizado++
-  })
-
-  // Todos los vencimientos relevantes ordenados
-  const todosVencimientos = [...vencidos, ...urgentes, ...proximos]
-    .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+  const { data: notificaciones } = await supabase
+    .from('notificaciones')
+    .select('*')
+    .eq('para_usuario', nombreUsuario)
+    .order('created_at', { ascending: false })
+    .limit(20)
 
   return (
-    <div className="space-y-6">
+    <div className="flex min-h-screen bg-gray-50 text-slate-900 font-sans">
 
-      {/* HEADER */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-5">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-blue-600 mb-1">Estudio Grimalt</p>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Hola, {nombreUsuario}</h1>
-          <p className="text-slate-500 text-sm mt-0.5 font-medium capitalize">
-            {new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
+      {/* SIDEBAR DESKTOP */}
+      <aside className="hidden md:flex w-64 bg-slate-900 text-slate-300 flex-col fixed h-full border-r border-slate-800 z-30">
+        <div className="p-6 border-b border-slate-800 flex items-center gap-3">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+            <Briefcase size={18} />
+          </div>
+          <span className="text-white font-bold tracking-tight text-lg">GRIMALT</span>
         </div>
-        <div className="flex gap-2">
-          <Link href="/clientes/nuevo" className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 transition">
-            <UserPlus size={13} /> Nuevo Cliente
-          </Link>
-          <Link href="/tramites/nuevo" className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition shadow-md">
-            <FileText size={13} /> Nuevo Trámite
-          </Link>
+
+        <nav className="flex-1 p-4 space-y-1">
+          {[
+            { href: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Inicio / Resúmen' },
+            { href: '/clientes', icon: <Users size={20} />, label: 'Clientes' },
+            { href: '/tramites', icon: <Briefcase size={20} />, label: 'Trámites' },
+            { href: '/historial', icon: <History size={20} />, label: 'Historial' },
+            { href: '/perfil', icon: <Settings size={20} />, label: 'Seguridad' },
+          ].map(item => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3 p-3 hover:bg-slate-800 hover:text-white rounded-xl transition duration-200 font-medium"
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-slate-800 space-y-2">
+          <div className="flex items-center gap-2 px-3 py-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-[11px] font-black flex-shrink-0">
+              {nombreUsuario.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-xs font-bold text-slate-300 truncate flex-1">{nombreUsuario}</span>
+            <Notificaciones notificaciones={notificaciones || []} nombreUsuario={nombreUsuario} />
+          </div>
+          <form action={signOut}>
+            <button type="submit" className="flex items-center gap-3 p-3 w-full hover:bg-red-950/40 rounded-xl text-red-400 hover:text-red-300 transition duration-200 group">
+              <LogOut size={20} className="group-hover:translate-x-1 transition-transform" />
+              <span className="font-bold">Cerrar sesión</span>
+            </button>
+          </form>
         </div>
-      </div>
-      {/* Banner notificaciones */}
-      {notificacionesNoLeidas.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-4 flex items-start gap-4">
-          <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-black">{notificacionesNoLeidas.length}</span>
+      </aside>
+
+      {/* NAVBAR MOBILE */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+            <Briefcase size={15} />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-black text-blue-800">
-              Tenés {notificacionesNoLeidas.length} notificación{notificacionesNoLeidas.length > 1 ? 'es' : ''} nueva{notificacionesNoLeidas.length > 1 ? 's' : ''}
-            </p>
-            <p className="text-xs text-blue-600 mt-0.5 truncate">
-              {notificacionesNoLeidas[0].mensaje}
-            </p>
-          </div>
+          <span className="text-white font-bold text-sm">GRIMALT</span>
         </div>
-      )}
-
-      {/* MÉTRICAS — fila compacta accionable */}
-      <div className="grid grid-cols-5 gap-3">
-        <Link href="/clientes" className="bg-white border border-slate-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition group">
-          <div className="flex items-center justify-between mb-3">
-            <Users size={15} className="text-blue-500" />
-            <ArrowRight size={12} className="text-slate-300 group-hover:text-blue-400 transition" />
+        <div className="flex items-center gap-2">
+          <Notificaciones notificaciones={notificaciones || []} nombreUsuario={nombreUsuario} />
+          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-[11px] font-black">
+            {nombreUsuario.charAt(0).toUpperCase()}
           </div>
-          <p className="text-2xl font-black text-slate-900">{totalClientes}</p>
-          <p className="text-xs font-bold text-slate-500 mt-0.5">Clientes</p>
-        </Link>
-
-        <Link href="/tramites" className="bg-white border border-slate-200 rounded-xl p-4 hover:border-orange-300 hover:shadow-md transition group">
-          <div className="flex items-center justify-between mb-3">
-            <Clock size={15} className="text-orange-500" />
-            <ArrowRight size={12} className="text-slate-300 group-hover:text-orange-400 transition" />
-          </div>
-          <p className="text-2xl font-black text-orange-500">{pendientes}</p>
-          <p className="text-xs font-bold text-slate-500 mt-0.5">Pendientes</p>
-        </Link>
-
-        <Link href="/tramites" className="bg-white border border-slate-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition group">
-          <div className="flex items-center justify-between mb-3">
-            <ArrowRight size={15} className="text-blue-500" />
-            <ArrowRight size={12} className="text-slate-300 group-hover:text-blue-400 transition" />
-          </div>
-          <p className="text-2xl font-black text-blue-500">{enProceso}</p>
-          <p className="text-xs font-bold text-slate-500 mt-0.5">En proceso</p>
-        </Link>
-
-        <Link href="/tramites" className="bg-white border border-slate-200 rounded-xl p-4 hover:border-emerald-300 hover:shadow-md transition group">
-          <div className="flex items-center justify-between mb-3">
-            <CheckCircle2 size={15} className="text-emerald-500" />
-            <ArrowRight size={12} className="text-slate-300 group-hover:text-emerald-400 transition" />
-          </div>
-          <p className="text-2xl font-black text-emerald-600">{finalizados}</p>
-          <p className="text-xs font-bold text-slate-500 mt-0.5">Finalizados</p>
-        </Link>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <TrendingUp size={15} className="text-slate-500" />
-            <span className="text-[10px] font-black text-slate-400">{porcentajeCompletado}%</span>
-          </div>
-          <div className="w-full bg-slate-100 rounded-full h-2 mb-2">
-            <div
-              className="bg-emerald-500 h-2 rounded-full transition-all"
-              style={{ width: `${porcentajeCompletado}%` }}
-            />
-          </div>
-          <p className="text-xs font-bold text-slate-500">Completado</p>
         </div>
       </div>
 
-      {/* CUERPO — 3 columnas */}
-      <div className="grid grid-cols-3 gap-5">
-
-        {/* VENCIMIENTOS — col 1 y 2 */}
-        <div className="col-span-2 space-y-4">
-
-          {/* Vencidos hoy — prioridad máxima */}
-          {vencidos.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-xl overflow-hidden">
-              <div className="flex items-center gap-2 px-5 py-3 border-b border-red-200 bg-red-100">
-                <AlertTriangle size={13} className="text-red-600" />
-                <p className="text-xs font-black text-red-700 uppercase tracking-wider">{vencidos.length} Vencido{vencidos.length > 1 ? 's' : ''} — Requieren rápida atención </p>
-              </div>
-              <div className="divide-y divide-red-100">
-                {vencidos.map(t => (
-                  <FilaVencimiento key={t.id} t={t} tipo="vencido" />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Urgentes esta semana */}
-          {urgentes.length > 0 && (
-            <div className="bg-white border border-orange-200 rounded-xl overflow-hidden">
-              <div className="flex items-center gap-2 px-5 py-3 border-b border-orange-100 bg-orange-50">
-                <Clock size={13} className="text-orange-600" />
-                <p className="text-xs font-black text-orange-700 uppercase tracking-wider">{urgentes.length} Urgente{urgentes.length > 1 ? 's' : ''} — Vencen en 1-3 días</p>
-              </div>
-              <div className="divide-y divide-slate-50">
-                {urgentes.sort((a,b) => diasRestantes(a.fecha_vencimiento) - diasRestantes(b.fecha_vencimiento)).map(t => (
-                  <FilaVencimiento key={t.id} t={t} tipo="urgente" diasRestantes={diasRestantes(t.fecha_vencimiento)} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Próximos 7 días */}
-          {proximos.length > 0 && (
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-              <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100">
-                <FileText size={13} className="text-slate-400" />
-                <p className="text-xs font-black text-slate-500 uppercase tracking-wider">Próximos 7 días</p>
-              </div>
-              <div className="divide-y divide-slate-50">
-                {proximos.map(t => (
-                  <FilaVencimiento key={t.id} t={t} tipo="proximo" diasRestantes={diasRestantes(t.fecha_vencimiento)} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {todosVencimientos.length === 0 && (
-            <div className="bg-white border border-slate-200 rounded-xl py-12 text-center">
-              <CheckCircle2 size={24} className="text-emerald-400 mx-auto mb-2" />
-              <p className="text-slate-500 text-sm font-bold">Sin vencimientos próximos</p>
-              <p className="text-slate-400 text-xs mt-0.5">Todo al día</p>
-            </div>
-          )}
-        </div>
-
-        {/* COLUMNA DERECHA */}
-        <div className="space-y-4">
-
-          {/* Accesos rápidos */}
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-slate-100">
-              <p className="text-xs font-black text-slate-600 uppercase tracking-wider">Accesos rápidos</p>
-            </div>
-            <div className="divide-y divide-slate-50">
-              {[
-                { href: '/tramites/nuevo', label: 'Nuevo Trámite', icon: <FileText size={13} />, color: 'text-blue-600' },
-                { href: '/clientes/nuevo', label: 'Nuevo Cliente', icon: <UserPlus size={13} />, color: 'text-slate-600' },
-                { href: '/tramites', label: 'Ver Pendientes', icon: <Clock size={13} />, color: 'text-orange-500' },
-                { href: '/clientes', label: 'Ver Clientes', icon: <Users size={13} />, color: 'text-emerald-600' },
-                { href: '/historial', label: 'Ver Historial', icon: <ArrowRight size={13} />, color: 'text-purple-600' },
-              ].map(a => (
-                <Link key={a.href} href={a.href} className={`flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition group ${a.color}`}>
-                  <span>{a.icon}</span>
-                  <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900">{a.label}</span>
-                  <ArrowRight size={11} className="ml-auto text-slate-300 group-hover:text-current transition" />
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Resumen por responsable */}
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-slate-100">
-              <p className="text-xs font-black text-slate-600 uppercase tracking-wider">Por responsable</p>
-            </div>
-            <div className="divide-y divide-slate-50">
-              {Object.entries(porResponsable)
-                .sort((a, b) => (b[1].pendiente + b[1].en_proceso) - (a[1].pendiente + a[1].en_proceso))
-                .map(([nombre, stats]) => (
-                  <div key={nombre} className="px-5 py-3">
-                    <p className="text-xs font-black text-slate-700 uppercase tracking-wide mb-2">{nombre}</p>
-                    <div className="flex gap-3">
-                      <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-md">{stats.pendiente} pendiente/s.</span>
-                      <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">{stats.en_proceso} en proceso.</span>
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">{stats.finalizado} finalizado/s.</span>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function FilaVencimiento({ t, tipo, diasRestantes: dias }: { t: any, tipo: string, diasRestantes?: number }) {
-  return (
-    <div className="flex items-center justify-between px-5 py-3 hover:bg-slate-50/60 transition">
-      <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-lg flex flex-col items-center justify-center flex-shrink-0 text-center ${
-          tipo === 'vencido' ? 'bg-red-100 text-red-700' :
-          tipo === 'urgente' ? 'bg-orange-100 text-orange-700' :
-          'bg-slate-100 text-slate-600'
-        }`}>
-          <span className="text-xs font-black leading-none">{new Date(t.fecha_vencimiento).getDate()}</span>
-          <span className="text-[7px] font-bold uppercase">{new Date(t.fecha_vencimiento).toLocaleString('es', { month: 'short' })}</span>
-        </div>
-        <div>
-          <p className="text-[10px] font-black text-blue-500 uppercase tracking-wide leading-none mb-0.5">{t.clientes?.razon_social}</p>
-          <p className="text-sm font-bold text-slate-800 leading-tight">{t.tipo_tramite}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${
-          tipo === 'vencido' ? 'bg-red-100 text-red-700' :
-          tipo === 'urgente' ? 'bg-orange-100 text-orange-700' :
-          'bg-slate-100 text-slate-500'
-        }`}>
-          {tipo === 'vencido' ? 'Vencido' : dias === 0 ? 'Hoy' : `${dias}d`}
-        </span>
-        <Link href="/tramites" className="text-slate-300 hover:text-slate-600 transition">
-          <ArrowRight size={14} />
+      {/* BOTTOM NAV MOBILE */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-slate-900 border-t border-slate-800 flex items-center justify-around px-2 py-2">
+        <Link href="/dashboard" className="flex flex-col items-center gap-0.5 p-2 text-slate-400 hover:text-white transition">
+          <LayoutDashboard size={20} />
+          <span className="text-[9px] font-bold uppercase tracking-wide">Inicio</span>
         </Link>
-      </div>
+        <Link href="/clientes" className="flex flex-col items-center gap-0.5 p-2 text-slate-400 hover:text-white transition">
+          <Users size={20} />
+          <span className="text-[9px] font-bold uppercase tracking-wide">Clientes</span>
+        </Link>
+        <Link href="/tramites/nuevo" className="flex flex-col items-center gap-0.5 p-2">
+          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg -mt-6 border-4 border-slate-900">
+            <Briefcase size={22} className="text-white" />
+          </div>
+          <span className="text-[9px] font-bold uppercase tracking-wide text-blue-400 mt-0.5">Nuevo</span>
+        </Link>
+        <Link href="/tramites" className="flex flex-col items-center gap-0.5 p-2 text-slate-400 hover:text-white transition">
+          <History size={20} />
+          <span className="text-[9px] font-bold uppercase tracking-wide">Trámites</span>
+        </Link>
+        <form action={signOut}>
+          <button type="submit" className="flex flex-col items-center gap-0.5 p-2 text-red-400 hover:text-red-300 transition">
+            <LogOut size={20} />
+            <span className="text-[9px] font-bold uppercase tracking-wide">Salir</span>
+          </button>
+        </form>
+      </nav>
+
+      {/* MAIN */}
+      <main className="flex-1 md:pl-64 overflow-y-auto">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 md:pt-8 pb-24 md:pb-8">
+          {children}
+        </div>
+      </main>
     </div>
   )
 }
