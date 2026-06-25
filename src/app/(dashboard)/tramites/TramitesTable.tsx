@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
-import { updateTramiteStatus, deleteTramite, createComentario } from '@/app/actions'
+import { updateTramiteStatus, deleteTramite, createComentario, asignarTramite } from '@/app/actions'
 import { Clock, CheckCircle2, Circle, MoreHorizontal, Pencil, Trash2, MessageSquare, X, Send, AlertTriangle, ChevronDown } from 'lucide-react'
 
 const ESTADOS = ['todos', 'pendiente', 'en_proceso', 'finalizado']
@@ -29,7 +29,13 @@ function BadgeVencimiento({ fecha }: { fecha: string }) {
   )
 }
 
-export default function TramitesTable({ tramites, clientes, comentariosRaw }: { tramites: any[], clientes: any[], comentariosRaw: any[] }) {
+export default function TramitesTable({ tramites, clientes, comentariosRaw, usuarios, nombreUsuarioActual }: { 
+  tramites: any[], 
+  clientes: any[], 
+  comentariosRaw: any[],
+  usuarios: any[],
+  nombreUsuarioActual: string
+})
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null)
   const [drawerTramite, setDrawerTramite] = useState<any | null>(null)
   const [comentarios, setComentarios] = useState<any[]>([])
@@ -230,10 +236,17 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw }: { 
                     </td>
 
                     {/* Responsable */}
-                    <td className="px-6 py-5 text-center">
-                      <span className="inline-block bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wide px-3 py-1 rounded-full">
-                        {t.creado_por || 'Admin'}
-                      </span>
+                    <td className="px-6 py-5">
+                      <div className="text-center space-y-1">
+                        <p className="text-xs font-black text-slate-600 uppercase tracking-tight">
+                          {t.creado_por || 'Admin'}
+                        </p>
+                        {t.asignado_a && t.asignado_a !== t.creado_por && (
+                          <p className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
+                            → {t.asignado_a}
+                          </p>
+                        )}
+                      </div>
                     </td>
 
                     {/* Vencimiento */}
@@ -338,6 +351,31 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw }: { 
                           >
                             <Pencil size={12} className="text-blue-400" /> Editar
                           </Link>
+                          
+                          {/* Asignar — visible para todos */}
+                          <div className="px-4 py-2.5 border-t border-slate-50">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wide mb-1.5">Asignar a</p>
+                            <form action={asignarTramite}>
+                              <input type="hidden" name="id" value={t.id} />
+                              <select
+                                name="asignado_a"
+                                className="w-full text-xs border border-slate-200 rounded-xl px-2 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 mb-1.5"
+                                defaultValue={t.asignado_a || ''}
+                              >
+                                <option value="">Sin asignar</option>
+                                {usuarios.map((u: any) => (
+                                  <option key={u.nombre} value={u.nombre}>{u.nombre}</option>
+                                ))}
+                              </select>
+                              <button
+                                type="submit"
+                                className="w-full py-1.5 bg-blue-600 text-white text-[10px] font-black rounded-xl hover:bg-blue-700 transition uppercase tracking-wide"
+                                onClick={() => setMenuAbierto(null)}
+                              >
+                                Asignar
+                              </button>
+                            </form>
+                          </div>
                           <button
                             type="button"
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-black text-red-400 hover:bg-red-50 transition uppercase"
