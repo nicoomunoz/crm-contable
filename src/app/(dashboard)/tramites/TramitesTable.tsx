@@ -302,7 +302,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                         <MoreHorizontal size={15} />
                       </button>
                       {menuAbierto === t.id && (
-                        <div className="absolute right-4 top-12 z-50 bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-48 overflow-hidden">
+                        <div className="absolute right-4 bottom-0 z-50 bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-56 overflow-hidden">
                           <Link
                             href={`/tramites/editar?id=${t.id}`}
                             className="flex items-center gap-3 px-4 py-2.5 text-xs font-black text-slate-600 hover:bg-slate-50 transition uppercase"
