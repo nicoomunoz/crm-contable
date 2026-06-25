@@ -88,6 +88,7 @@ export async function deleteCliente(formData: FormData) {
 export async function createTramite(formData: FormData) {
   const supabase = createClient()
   const usuario = await getNombreUsuario(supabase)
+  const asignado_a = formData.get('asignado_a') as string || null
 
   const data = {
     cliente_id: formData.get('cliente_id') as string,
@@ -96,6 +97,7 @@ export async function createTramite(formData: FormData) {
     fecha_vencimiento: formData.get('fecha_vencimiento') as string || null,
     observaciones: formData.get('observaciones') as string,
     creado_por: usuario,
+    asignado_a,
   }
 
   const { data: nuevo, error } = await supabase.from('tramites').insert(data).select().single()
@@ -107,10 +109,19 @@ export async function createTramite(formData: FormData) {
     .eq('id', data.cliente_id)
     .single()
 
+  // Notificar al asignado si es distinto al creador
+  if (asignado_a && asignado_a !== usuario) {
+    await supabase.from('notificaciones').insert({
+      para_usuario: asignado_a,
+      mensaje: `${usuario} te asignó el trámite "${data.tipo_tramite}" de ${cliente?.razon_social || 'cliente'}`,
+      tramite_id: nuevo?.id,
+    })
+  }
+
   await registrarAuditoria(supabase, {
     usuario,
     accion: 'CREACION',
-    detalle: `Creó "${data.tipo_tramite}" para ${cliente?.razon_social || 'cliente desconocido'}`,
+    detalle: `Creó "${data.tipo_tramite}" para ${cliente?.razon_social || 'cliente desconocido'}${asignado_a ? ` — asignado a ${asignado_a}` : ''}`,
     tramite_id: nuevo?.id,
   })
 
