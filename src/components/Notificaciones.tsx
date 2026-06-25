@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Bell, X, CheckCheck } from 'lucide-react'
-import { createClient } from '@/lib/supabase'
 import { marcarNotificacionLeida } from '@/app/actions'
 import { createBrowserSupabaseClient } from '@/lib/supabase-browser'
 
@@ -89,7 +88,6 @@ export default function Notificaciones({ notificaciones: iniciales, nombreUsuari
                         >
                           Marcar leída
                         </button>
-                        </form>
                       )}
                     </div>
                   </div>
