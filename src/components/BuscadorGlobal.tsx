@@ -121,7 +121,7 @@ export default function BuscadorGlobal() {
                   {resultados.clientes.map((c: any) => (
                     <button
                       key={c.id}
-                      onClick={() => irA('/clientes')}
+                      onClick={() => irA(`/clientes?q=${encodeURIComponent(c.razon_social)}`)}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition text-left"
                     >
                       <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-[11px] font-black flex-shrink-0">
@@ -146,7 +146,7 @@ export default function BuscadorGlobal() {
                   {resultados.tramites.map((t: any) => (
                     <button
                       key={t.id}
-                      onClick={() => irA('/tramites')}
+                      onClick={() => irA(`/tramites?q=${encodeURIComponent(t.tipo_tramite)}`)}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition text-left"
                     >
                       <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
@@ -174,7 +174,7 @@ export default function BuscadorGlobal() {
                   {resultados.comentarios.map((c: any) => (
                     <button
                       key={c.id}
-                      onClick={() => irA('/tramites')}
+                      onClick={() => irA(`/tramites?q=${encodeURIComponent(c.tipo_tramite || '')}`)}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition text-left"
                     >
                       <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
