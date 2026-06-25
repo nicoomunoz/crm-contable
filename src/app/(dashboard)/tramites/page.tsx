@@ -1,93 +1,43 @@
+export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase'
-import { createTramite } from '@/app/actions'
-
-export default async function NuevoTramitePage() {
+import Link from 'next/link'
+import TramitesTable from './TramitesTable'
+export default async function TramitesPage() {
   const supabase = createClient()
-
-  const [clientesRes, usuariosRes] = await Promise.all([
-    supabase.from('clientes').select('id, razon_social').order('razon_social'),
-    supabase.from('usuarios').select('nombre').order('nombre'),
+  const { data: { user } } = await supabase.auth.getUser()
+  const nombreUsuarioActual = user?.user_metadata?.full_name || user?.email?.split('@')[0] || ''
+  const [tramitesRes, clientesRes, comentariosRes, usuariosRes] = await Promise.all([
+    supabase.from('tramites').select('*').order('created_at', { ascending: false }),
+    supabase.from('clientes').select('id, razon_social'),
+    supabase.from('comentarios').select('tramite_id'),
+    supabase.from('usuarios').select('nombre, es_jefe').order('nombre'),
   ])
-
+  const tramites = tramitesRes.data || []
   const clientes = clientesRes.data || []
+  const todosLosComentarios = comentariosRes.data || []
   const usuarios = usuariosRes.data || []
-
+  const tramitesConCliente = tramites.map(t => ({
+    ...t,
+    clientes: clientes.find(c => c.id === t.cliente_id) || null
+  }))
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-6">
-        <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-blue-600 mb-1">Estudio Grimalt</p>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Nuevo Trámite</h1>
-        <p className="text-slate-500 text-sm mt-0.5">Asigná un trámite o vencimiento a un cliente.</p>
+    <div className="space-y-6 px-4">
+      <div className="flex justify-between items-end px-2">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-blue-600 mb-1">Estudio Grimalt</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Trámites</h1>
+        </div>
+        <Link href="/tramites/nuevo" className="bg-slate-950 text-white px-8 py-3.5 rounded-2xl font-black text-[11px] uppercase shadow-2xl hover:bg-blue-600 transition-all active:scale-95 tracking-widest">
+          + Iniciar Nuevo
+        </Link>
       </div>
-
-      <form action={createTramite} className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm space-y-5">
-
-        <div>
-          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Cliente</label>
-          <select name="cliente_id" required className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-slate-50 text-sm font-semibold text-slate-700">
-            <option value="">— Elegí un cliente —</option>
-            {clientes.map(c => (
-              <option key={c.id} value={c.id}>{c.razon_social}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Tipo de Trámite</label>
-          <input
-            name="tipo_tramite"
-            placeholder="Ej: Liquidación IVA, Certificación, Alta AFIP"
-            required
-            className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 text-sm font-semibold text-slate-700"
-          />
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Asignar a</label>
-          <select name="asignado_a" className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-slate-50 text-sm font-semibold text-slate-700">
-            <option value="">Sin asignar</option>
-            {usuarios.map((u: any) => (
-              <option key={u.nombre} value={u.nombre}>{u.nombre}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Vencimiento</label>
-            <input
-              name="fecha_vencimiento"
-              type="date"
-              className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Estado inicial</label>
-            <select name="estado" disabled className="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-100 text-sm text-slate-400 font-semibold">
-              <option value="pendiente">Pendiente (por defecto)</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Observaciones</label>
-          <textarea
-            name="observaciones"
-            rows={3}
-            className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 text-sm text-slate-700"
-            placeholder="Detalles adicionales..."
-          />
-        </div>
-
-        <div className="pt-2 flex gap-3">
-          <button type="submit" className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition">
-            Crear Trámite
-          </button>
-          <a href="/tramites" className="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-center hover:bg-slate-200 transition">
-            Cancelar
-          </a>
-        </div>
-      </form>
+      <TramitesTable
+        tramites={tramitesConCliente}
+        clientes={clientes}
+        comentariosRaw={todosLosComentarios}
+        usuarios={usuarios}
+        nombreUsuarioActual={nombreUsuarioActual}
+      />
     </div>
   )
 }
