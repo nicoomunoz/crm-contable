@@ -71,6 +71,8 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
                 name="password" 
                 type="password"
                 autoComplete="current-password"
+                key={searchParams.error}
+                defaultValue=""
                 required 
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3.5 text-slate-900 text-sm font-bold outline-none focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                 placeholder="••••••••••••"
