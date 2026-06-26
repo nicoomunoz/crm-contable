@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { updateTramiteStatus, deleteTramite, createComentario, asignarTramite } from '@/app/actions'
-import { Clock, CheckCircle2, Circle, MoreHorizontal, Pencil, Trash2, MessageSquare, X, Send, AlertTriangle, ChevronDown } from 'lucide-react'
+import { Clock, CheckCircle2, Circle, MoreHorizontal, Pencil, Trash2, MessageSquare, X, Send, AlertTriangle, ChevronDown, Loader2 } from 'lucide-react'
 import { createBrowserSupabaseClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 
@@ -48,12 +48,17 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   const [filtroResponsable, setFiltroResponsable] = useState('todos')
   const [filtroEstado, setFiltroEstado] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
-  // Leer query de la URL al cargar
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search)
-  const q = params.get('q')
-  if (q) setBusqueda(q)
-}, [])
+
+  // Estados nuevos para confirmar borrado y loading
+  const [confirmarBorrar, setConfirmarBorrar] = useState<string | null>(null)
+  const [borrando, setBorrando] = useState<string | null>(null)
+  const [cambiandoEstado, setCambiandoEstado] = useState<string | null>(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const q = params.get('q')
+    if (q) setBusqueda(q)
+  }, [])
 
   const router = useRouter()
 
@@ -90,16 +95,29 @@ useEffect(() => {
     }
   }, [])
 
-  // Cerrar menú al hacer click afuera usando ref
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (menuRef.current && menuRef.current.contains(e.target as Node)) return
       setMenuAbierto(null)
       setMenuPos(null)
+      setConfirmarBorrar(null)
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  async function handleBorrar(id: string) {
+    setBorrando(id)
+    setConfirmarBorrar(null)
+    setMenuAbierto(null)
+    try {
+      const formData = new FormData()
+      formData.append('id', id)
+      await deleteTramite(formData)
+    } catch {
+      setBorrando(null)
+    }
+  }
 
   async function abrirDrawer(t: any) {
     setDrawerTramite(t)
@@ -223,7 +241,7 @@ useEffect(() => {
             const nombreClienteMostrable = miCliente ? miCliente.razon_social : 'CLIENTE'
 
             return (
-              <div key={t.id} className={`bg-white rounded-2xl border px-4 py-3 space-y-2 ${esUrgente ? 'border-orange-200 bg-orange-50/20' : 'border-slate-100'}`}>
+              <div key={t.id} className={`bg-white rounded-2xl border px-4 py-3 space-y-2 transition-opacity ${borrando === t.id ? 'opacity-40' : ''} ${esUrgente ? 'border-orange-200 bg-orange-50/20' : 'border-slate-100'}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider leading-none mb-0.5 truncate">{nombreClienteMostrable}</p>
@@ -234,10 +252,10 @@ useEffect(() => {
                     t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500' :
                     'bg-emerald-50 text-emerald-600'
                   }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${
-                      t.estado === 'pendiente' ? 'bg-orange-400' :
-                      t.estado === 'en_proceso' ? 'bg-blue-400' : 'bg-emerald-400'
-                    }`} />
+                    {cambiandoEstado === t.id
+                      ? <Loader2 size={10} className="animate-spin" />
+                      : <span className={`w-1.5 h-1.5 rounded-full ${t.estado === 'pendiente' ? 'bg-orange-400' : t.estado === 'en_proceso' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
+                    }
                     {t.estado.replace('_', ' ')}
                   </span>
                 </div>
@@ -254,21 +272,21 @@ useEffect(() => {
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-slate-50">
                   <div className="flex gap-1">
-                    <form action={updateTramiteStatus}>
+                    <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
                       <input type="hidden" name="id" value={t.id} />
                       <input type="hidden" name="nuevoEstado" value="pendiente" />
                       <button className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-orange-500 hover:bg-orange-50 transition">
                         <Circle size={16} strokeWidth={2.5} />
                       </button>
                     </form>
-                    <form action={updateTramiteStatus}>
+                    <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
                       <input type="hidden" name="id" value={t.id} />
                       <input type="hidden" name="nuevoEstado" value="en_proceso" />
                       <button className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-blue-600 hover:bg-blue-50 transition">
                         <Clock size={16} strokeWidth={2.5} />
                       </button>
                     </form>
-                    <form action={updateTramiteStatus}>
+                    <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
                       <input type="hidden" name="id" value={t.id} />
                       <input type="hidden" name="nuevoEstado" value="finalizado" />
                       <button className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 transition">
@@ -291,17 +309,30 @@ useEffect(() => {
                     <Link href={`/tramites/editar?id=${t.id}`} className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition">
                       <Pencil size={15} />
                     </Link>
-                    <button
-                      type="button"
-                      className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-red-400 hover:bg-red-50 transition"
-                      onClick={async () => {
-                        const formData = new FormData()
-                        formData.append('id', t.id)
-                        await deleteTramite(formData)
-                      }}
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                    {confirmarBorrar === t.id ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleBorrar(t.id)}
+                          className="h-8 px-2 flex items-center justify-center rounded-xl bg-red-500 text-white text-[10px] font-black transition"
+                        >
+                          {borrando === t.id ? <Loader2 size={12} className="animate-spin" /> : 'Sí'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmarBorrar(null)}
+                          className="h-8 px-2 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 text-[10px] font-black transition"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-red-400 hover:bg-red-50 transition"
+                        onClick={() => setConfirmarBorrar(t.id)}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -350,7 +381,7 @@ useEffect(() => {
                 const nombreClienteMostrable = miCliente ? miCliente.razon_social : 'CLIENTE'
 
                 return (
-                  <tr key={t.id} className={`transition-all group ${esUrgente ? 'bg-red-50/30 hover:bg-red-50/50' : 'hover:bg-slate-50/60'}`}>
+                  <tr key={t.id} className={`transition-all group ${borrando === t.id ? 'opacity-40' : ''} ${esUrgente ? 'bg-red-50/30 hover:bg-red-50/50' : 'hover:bg-slate-50/60'}`}>
                     <td className="px-8 py-5">
                       <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">{nombreClienteMostrable}</p>
                       <p className="text-slate-800 font-black text-base tracking-tight leading-snug">{t.tipo_tramite}</p>
@@ -374,30 +405,30 @@ useEffect(() => {
                         t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500' :
                         'bg-emerald-50 text-emerald-600'
                       }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${
-                          t.estado === 'pendiente' ? 'bg-orange-400' :
-                          t.estado === 'en_proceso' ? 'bg-blue-400' : 'bg-emerald-400'
-                        }`} />
+                        {cambiandoEstado === t.id
+                          ? <Loader2 size={10} className="animate-spin" />
+                          : <span className={`w-1.5 h-1.5 rounded-full ${t.estado === 'pendiente' ? 'bg-orange-400' : t.estado === 'en_proceso' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
+                        }
                         {t.estado.replace('_', ' ')}
                       </span>
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex gap-2 justify-center items-center">
-                        <form action={updateTramiteStatus}>
+                        <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="pendiente" />
                           <button title="Marcar pendiente" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-orange-500 hover:bg-orange-50 border-2 border-transparent transition-all active:scale-90">
                             <Circle size={18} strokeWidth={2.5} />
                           </button>
                         </form>
-                        <form action={updateTramiteStatus}>
+                        <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="en_proceso" />
                           <button title="Marcar en proceso" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 border-2 border-transparent transition-all active:scale-90">
                             <Clock size={18} strokeWidth={2.5} />
                           </button>
                         </form>
-                        <form action={updateTramiteStatus}>
+                        <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
                           <input type="hidden" name="id" value={t.id} />
                           <input type="hidden" name="nuevoEstado" value="finalizado" />
                           <button title="Marcar finalizado" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 border-2 border-transparent transition-all active:scale-90">
@@ -425,6 +456,7 @@ useEffect(() => {
                           const rect = e.currentTarget.getBoundingClientRect()
                           setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right })
                           setMenuAbierto(menuAbierto === t.id ? null : t.id)
+                          setConfirmarBorrar(null)
                         }}
                         className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition"
                       >
@@ -468,18 +500,35 @@ useEffect(() => {
                             </form>
                           </div>
                           <div className="border-t border-slate-50">
-                            <button
-                              type="button"
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-black text-red-400 hover:bg-red-50 transition uppercase"
-                              onClick={async () => {
-                                setMenuAbierto(null)
-                                const formData = new FormData()
-                                formData.append('id', t.id)
-                                await deleteTramite(formData)
-                              }}
-                            >
-                              <Trash2 size={12} /> Borrar
-                            </button>
+                            {confirmarBorrar === t.id ? (
+                              <div className="px-4 py-2.5 space-y-2">
+                                <p className="text-[10px] font-black text-red-500 uppercase tracking-wide">¿Confirmar borrado?</p>
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleBorrar(t.id)}
+                                    className="flex-1 py-1.5 bg-red-500 text-white text-[10px] font-black rounded-xl hover:bg-red-600 transition flex items-center justify-center gap-1"
+                                  >
+                                    {borrando === t.id ? <Loader2 size={11} className="animate-spin" /> : 'Sí, borrar'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmarBorrar(null)}
+                                    className="flex-1 py-1.5 bg-slate-100 text-slate-600 text-[10px] font-black rounded-xl hover:bg-slate-200 transition"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-black text-red-400 hover:bg-red-50 transition uppercase"
+                                onClick={() => setConfirmarBorrar(t.id)}
+                              >
+                                <Trash2 size={12} /> Borrar
+                              </button>
+                            )}
                           </div>
                         </div>
                       )}
