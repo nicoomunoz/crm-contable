@@ -424,12 +424,17 @@ export async function createTramiteMultiple(formData: FormData) {
       .eq('id', cliente_id)
       .single()
 
-    if (asignado_a && asignado_a !== usuario) {
-      await supabase.from('notificaciones').insert({
-        para_usuario: asignado_a,
-        mensaje: `${usuario} te asignó el trámite "${tipo_tramite}" de ${clienteData?.razon_social || 'cliente'}`,
-        tramite_id: nuevo?.id,
-      })
+    if (asignado_a) {
+      const responsables = asignado_a.split(',').map((n: string) => n.trim()).filter(Boolean)
+      for (const responsable of responsables) {
+        if (responsable !== usuario) {
+          await supabase.from('notificaciones').insert({
+            para_usuario: responsable,
+            mensaje: `${usuario} te asignó el trámite "${tipo_tramite}" de ${clienteData?.razon_social || 'cliente'}`,
+            tramite_id: nuevo?.id,
+          })
+        }
+      }
     }
 
     await registrarAuditoria(supabase, {
