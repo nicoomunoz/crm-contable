@@ -108,8 +108,8 @@ function NuevoTramiteForm({ clientes, usuarios }: { clientes: any[], usuarios: a
               {seleccionados.map(id => {
                 const cliente = clientes.find(c => c.id === id)
                 return (
-                  <div key={id} className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5">
-                    <p className="text-sm font-bold text-slate-700 flex-1 truncate">{cliente?.razon_social}</p>
+                  <div key={id} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 space-y-2">
+                    <p className="text-xs font-black text-blue-500 uppercase tracking-wide">{cliente?.razon_social}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {usuarios.map((u: any) => {
                         const asignadosActuales = asignaciones[id] ? asignaciones[id].split(',').map((n: string) => n.trim()) : []
@@ -136,7 +136,6 @@ function NuevoTramiteForm({ clientes, usuarios }: { clientes: any[], usuarios: a
                         )
                       })}
                     </div>
-                    {/* Inputs hidden para enviar cliente_id y su asignado */}
                     <input type="hidden" name="cliente_ids" value={id} />
                     <input type="hidden" name={`asignado_${id}`} value={asignaciones[id] || ''} />
                   </div>
