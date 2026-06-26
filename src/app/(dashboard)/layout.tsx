@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import Notificaciones from '@/components/Notificaciones'
 import BuscadorGlobal from '@/components/BuscadorGlobal'
+import UsuariosOnline from '@/components/UsuariosOnline'
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = createClient()
@@ -51,7 +52,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             </Link>
           ))}
         </nav>
-
+        <UsuariosOnline nombreUsuario={nombreUsuario} />
         <div className="p-4 border-t border-slate-800 space-y-2">
           <div className="flex items-center gap-2 px-3 py-2">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-[11px] font-black flex-shrink-0">
