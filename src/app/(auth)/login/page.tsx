@@ -1,7 +1,18 @@
+'use client'
+import { useState, useEffect } from 'react'
 import { login } from '@/app/actions'
 import { AlertCircle, LockKeyhole, Mail, ShieldCheck, Database } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 
-export default function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
+export default function LoginPage() {
+  const searchParams = useSearchParams()
+  const hasError = searchParams.get('error') === 'true'
+  const [password, setPassword] = useState('')
+
+  useEffect(() => {
+    if (hasError) setPassword('')
+  }, [hasError])
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-[#f8fafc] font-sans text-slate-900">
       
@@ -23,7 +34,7 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
               ESTUDIO <br/> 
               <span className="text-blue-500 underline decoration-4 underline-offset-8">GRIMALT</span>
             </h1>
-            <p className="text-slate-400 text-sm leading-relaxed max-w-[280px] font-bold uppercase tracking-wider text-[10px]">
+            <p className="text-slate-400 leading-relaxed max-w-[280px] font-bold uppercase tracking-wider text-[10px]">
               Acceso a trámites y clientes.
             </p>
           </div>
@@ -41,7 +52,7 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
             <p className="text-slate-500 text-xs font-bold uppercase tracking-widest opacity-60">Ingrese sus credenciales de acceso</p>
           </div>
 
-          {searchParams.error === 'true' && (
+          {hasError && (
             <div className="bg-red-50 text-red-600 p-4 rounded-lg text-xs font-black mb-8 border border-red-200 flex items-start gap-3 uppercase tracking-tight">
               <AlertCircle size={18} className="shrink-0 mt-0.5" />
               <p>Los datos son incorrectos. Reintente por favor.</p>
@@ -71,9 +82,9 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
                 name="password" 
                 type="password"
                 autoComplete="current-password"
-                key={searchParams.error}
-                defaultValue=""
-                required 
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3.5 text-slate-900 text-sm font-bold outline-none focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                 placeholder="••••••••••••"
               />
@@ -94,7 +105,6 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
             </div>
           </div>
         </div>
-
       </div>
     </div>
   )
