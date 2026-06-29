@@ -140,8 +140,13 @@ export async function createTramite(formData: FormData) {
 
 export async function updateTramiteStatus(formData: FormData) {
   const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autorizado')
+
   const id = formData.get('id') as string
   const nuevoEstado = formData.get('nuevoEstado') as string
+  const ESTADOS_VALIDOS = ['pendiente', 'en_proceso', 'finalizado']
+  if (!ESTADOS_VALIDOS.includes(nuevoEstado)) throw new Error('Estado inválido')
   const usuario = await getNombreUsuario(supabase)
 
   const { data: tramiteActual } = await supabase
@@ -378,8 +383,15 @@ export async function asignarTramite(formData: FormData) {
 // Marcar notificación como leída
 export async function marcarNotificacionLeida(formData: FormData) {
   const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autorizado')
+
+  const usuario = await getNombreUsuario(supabase)
   const id = formData.get('id') as string
-  await supabase.from('notificaciones').update({ leida: true }).eq('id', id)
+  await supabase.from('notificaciones')
+    .update({ leida: true })
+    .eq('id', id)
+    .eq('para_usuario', usuario)
   revalidatePath('/tramites')
   revalidatePath('/dashboard')
 }
@@ -388,10 +400,17 @@ export async function marcarNotificacionLeida(formData: FormData) {
 //NUEVO TRAMITES VARIOS CLIENTES
 export async function createTramiteMultiple(formData: FormData) {
   const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autorizado')
+
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   const usuario = await getNombreUsuario(supabase)
 
-  const clienteIds = formData.getAll('cliente_ids') as string[]
-  const tipo_tramite = formData.get('tipo_tramite') as string
+  const clienteIds = (formData.getAll('cliente_ids') as string[]).filter(id => UUID_REGEX.test(id))
+  if (clienteIds.length === 0) throw new Error('No hay clientes válidos')
+
+  const tipo_tramite = (formData.get('tipo_tramite') as string)?.trim()
+  if (!tipo_tramite || tipo_tramite.length < 2) throw new Error('Tipo de trámite inválido')
   const fecha_vencimiento = formData.get('fecha_vencimiento') as string || null
   const observaciones = formData.get('observaciones') as string
 
