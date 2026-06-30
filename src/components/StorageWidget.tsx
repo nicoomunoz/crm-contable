@@ -6,9 +6,16 @@ export default function StorageWidget() {
   const [data, setData] = useState<any>(null)
 
   useEffect(() => {
-    fetch('/api/storage-usage')
-      .then(r => r.json())
-      .then(setData)
+    function cargar() {
+      fetch('/api/storage-usage')
+        .then(r => r.json())
+        .then(setData)
+    }
+
+    cargar()
+    const interval = setInterval(cargar, 15000) // refresca cada 15s
+
+    return () => clearInterval(interval)
   }, [])
 
   if (!data || data.error) return null
