@@ -5,6 +5,7 @@ import { updateTramiteStatus, deleteTramite, createComentario, asignarTramite } 
 import { Clock, CheckCircle2, Circle, MoreHorizontal, Pencil, Trash2, MessageSquare, X, Send, AlertTriangle, ChevronDown, Loader2 } from 'lucide-react'
 import { createBrowserSupabaseClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
+import DocumentosTramite from '@/components/DocumentosTramite'
 
 const ESTADOS = ['todos', 'pendiente', 'en_proceso', 'finalizado']
 
@@ -588,7 +589,17 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+              {drawerTramite && (
+                <DocumentosTramite tramiteId={drawerTramite.id} />
+              )}
+            
+              <div className="border-t border-slate-100 pt-4">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <MessageSquare size={13} className="text-slate-400" /> Comentarios {comentarios.length > 0 && `(${comentarios.length})`}
+                </p>
+              </div>
+            
               {cargando ? (
                 <p className="text-slate-300 text-xs text-center pt-8">Cargando...</p>
               ) : comentarios.length === 0 ? (
