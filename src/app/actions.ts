@@ -469,3 +469,103 @@ export async function createTramiteMultiple(formData: FormData) {
   revalidatePath('/historial')
   redirect('/tramites')
 }
+/**
+ * --- DOCUMENTOS / ARCHIVOS ---
+ */
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const TIPOS_PERMITIDOS = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+
+export async function uploadDocumento(formData: FormData) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autorizado')
+
+  const usuario = await getNombreUsuario(supabase)
+  const tramite_id = formData.get('tramite_id') as string
+  const file = formData.get('file') as File
+
+  if (!file || file.size === 0) throw new Error('No se seleccionó ningún archivo')
+  if (file.size > MAX_FILE_SIZE) throw new Error('El archivo supera el límite de 5MB')
+  if (!TIPOS_PERMITIDOS.includes(file.type)) throw new Error('Tipo de archivo no permitido. Solo PDF, JPG, PNG o WEBP')
+
+  // Nombre único para evitar colisiones
+  const extension = file.name.split('.').pop()
+  const nombreUnico = `${tramite_id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('estudio-docs')
+    .upload(nombreUnico, file)
+
+  if (uploadError) throw new Error(uploadError.message)
+
+  const { data: tramiteData } = await supabase
+    .from('tramites')
+    .select('tipo_tramite, cliente_id')
+    .eq('id', tramite_id)
+    .single()
+
+  const { data: clienteData } = await supabase
+    .from('clientes')
+    .select('razon_social')
+    .eq('id', tramiteData?.cliente_id)
+    .single()
+
+  const { error: dbError } = await supabase.from('documentos_tramite').insert({
+    tramite_id,
+    url: nombreUnico,
+    nombre_archivo: file.name,
+    peso: file.size,
+    tipo: file.type,
+    subido_por: usuario,
+  })
+
+  if (dbError) throw new Error(dbError.message)
+
+  await registrarAuditoria(supabase, {
+    usuario,
+    accion: 'ARCHIVO',
+    detalle: `Subió "${file.name}" a "${tramiteData?.tipo_tramite}" de ${clienteData?.razon_social || 'cliente desconocido'}`,
+    tramite_id,
+  })
+
+  revalidatePath('/tramites')
+  revalidatePath('/historial')
+}
+
+export async function deleteDocumento(formData: FormData) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autorizado')
+
+  const usuario = await getNombreUsuario(supabase)
+  const id = formData.get('id') as string
+  const url = formData.get('url') as string
+  const tramite_id = formData.get('tramite_id') as string
+
+  await supabase.storage.from('estudio-docs').remove([url])
+
+  const { error } = await supabase.from('documentos_tramite').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+
+  await registrarAuditoria(supabase, {
+    usuario,
+    accion: 'ARCHIVO',
+    detalle: `Eliminó un documento adjunto`,
+    tramite_id,
+  })
+
+  revalidatePath('/tramites')
+}
+
+export async function getUrlFirmada(url: string) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autorizado')
+
+  const { data, error } = await supabase.storage
+    .from('estudio-docs')
+    .createSignedUrl(url, 60 * 5) // válido 5 minutos
+
+  if (error) throw new Error(error.message)
+  return data.signedUrl
+}
