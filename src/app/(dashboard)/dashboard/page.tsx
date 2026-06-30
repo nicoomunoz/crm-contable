@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 import { Clock, Users, CheckCircle2, ArrowRight, FileText, UserPlus, AlertTriangle, TrendingUp } from 'lucide-react'
-import StorageWidget from '@/components/StorageWidget'
+
 
 export default async function DashboardPage() {
   const supabase = createClient()
@@ -254,7 +254,7 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
-      <StorageWidget />
+      
     </div>
   )
 }
