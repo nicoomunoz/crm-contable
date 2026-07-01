@@ -411,7 +411,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
               <th className="px-4 py-5"></th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y-2 divide-slate-100">
             {tramitesAgrupados.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-16 text-slate-600 font-bold uppercase text-xs tracking-widest">
@@ -454,7 +454,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
       
                       return (
                         <tr key={t.id} className={`transition-all border-b border-slate-50 ${borrando === t.id ? 'opacity-40' : ''} ${esUrgente ? 'bg-red-50/30 hover:bg-red-50/50' : grupo.esGrupo ? 'hover:bg-blue-50/20' : 'hover:bg-slate-50/60'}`}>
-                          <td className={`py-4 ${grupo.esGrupo ? 'pl-16 pr-6' : 'px-8 py-5'}`}>
+                          <td className={`py-4 ${grupo.esGrupo ? 'pl-10 pr-6' : 'px-8 py-5'}`}>
                             <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">{nombreClienteMostrable}</p>
                             {!grupo.esGrupo && <p className="text-slate-800 font-black text-base tracking-tight leading-snug">{t.tipo_tramite}</p>}
                           </td>
