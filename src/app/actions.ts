@@ -312,22 +312,42 @@ export async function createComentario(formData: FormData) {
     .single()
 
   const { error } = await supabase.from('comentarios').insert({
-    tramite_id,
-    contenido,
-    autor: usuario,
-  })
-  if (error) throw new Error(error.message)
-
-  await registrarAuditoria(supabase, {
-    usuario,
-    accion: 'COMENTARIO',
-    detalle: `Comentó en "${tramiteData?.tipo_tramite}" de ${clienteData?.razon_social || 'cliente desconocido'}`,
-    tramite_id,
-  })
-
-  revalidatePath('/tramites')
-  revalidatePath('/historial')
-}
+      tramite_id,
+      contenido,
+      autor: usuario,
+    })
+    if (error) throw new Error(error.message)
+  
+    // Notificar a los responsables (excepto quien comentó)
+    const { data: tramiteConAsignado } = await supabase
+      .from('tramites')
+      .select('asignado_a')
+      .eq('id', tramite_id)
+      .single()
+  
+    if (tramiteConAsignado?.asignado_a) {
+      const responsables = tramiteConAsignado.asignado_a.split(',').map((n: string) => n.trim()).filter(Boolean)
+      for (const responsable of responsables) {
+        if (responsable !== usuario) {
+          await supabase.from('notificaciones').insert({
+            para_usuario: responsable,
+            mensaje: `${usuario} comentó en "${tramiteData?.tipo_tramite}" de ${clienteData?.razon_social || 'cliente'}: "${contenido.slice(0, 60)}${contenido.length > 60 ? '...' : ''}"`,
+            tramite_id,
+          })
+        }
+      }
+    }
+  
+    await registrarAuditoria(supabase, {
+      usuario,
+      accion: 'COMENTARIO',
+      detalle: `Comentó en "${tramiteData?.tipo_tramite}" de ${clienteData?.razon_social || 'cliente desconocido'}`,
+      tramite_id,
+    })
+  
+    revalidatePath('/tramites')
+    revalidatePath('/historial')
+  }
 
 export async function updatePassword(formData: FormData) {
   const supabase = createClient()
