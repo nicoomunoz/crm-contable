@@ -233,6 +233,13 @@ export async function updateTramite(formData: FormData) {
   const id = formData.get('id') as string
   const usuario = await getNombreUsuario(supabase)
 
+  // Obtener datos actuales ANTES de editar para comparar
+  const { data: tramiteActual } = await supabase
+    .from('tramites')
+    .select('tipo_tramite, fecha_vencimiento, observaciones, asignado_a, cliente_id')
+    .eq('id', id)
+    .single()
+
   const data = {
     cliente_id: formData.get('cliente_id') as string,
     tipo_tramite: formData.get('tipo_tramite') as string,
@@ -247,51 +254,66 @@ export async function updateTramite(formData: FormData) {
     .single()
 
   const { error } = await supabase.from('tramites').update(data).eq('id', id)
-    if (error) throw new Error(error.message)
-  
-    // Si hay observaciones nuevas, guardarlas como comentario
-    const observaciones = (formData.get('observaciones') as string)?.trim()
-    if (observaciones) {
-      await supabase.from('comentarios').insert({
-        tramite_id: id,
-        contenido: observaciones,
-        autor: usuario,
-      })
-    }
-  
-    // Notificar a los responsables (excepto quien editó)
-    const { data: tramiteConAsignado } = await supabase
-      .from('tramites')
-      .select('asignado_a')
-      .eq('id', id)
-      .single()
-  
-    if (tramiteConAsignado?.asignado_a) {
-      const responsables = tramiteConAsignado.asignado_a.split(',').map((n: string) => n.trim()).filter(Boolean)
-      for (const responsable of responsables) {
-        if (responsable !== usuario) {
-          await supabase.from('notificaciones').insert({
-            para_usuario: responsable,
-            mensaje: `${usuario} editó el trámite "${data.tipo_tramite}" de ${clienteData?.razon_social || 'cliente'}`,
-            tramite_id: id,
-          })
-        }
-      }
-    }
-  
-    await registrarAuditoria(supabase, {
-      usuario,
-      accion: 'EDICION',
-      detalle: `Editó "${data.tipo_tramite}" de ${clienteData?.razon_social || 'cliente desconocido'}`,
+  if (error) throw new Error(error.message)
+
+  // Si hay observaciones nuevas, guardarlas como comentario
+  const observaciones = (formData.get('observaciones') as string)?.trim()
+  if (observaciones) {
+    await supabase.from('comentarios').insert({
       tramite_id: id,
+      contenido: observaciones,
+      autor: usuario,
     })
-  
-    revalidatePath('/tramites')
-    revalidatePath('/dashboard')
-    revalidatePath('/historial')
-    redirect('/tramites')
   }
 
+  // Detectar qué cambió para el mensaje
+  const cambios: string[] = []
+  if (tramiteActual?.tipo_tramite !== data.tipo_tramite) {
+    cambios.push(`nombre: "${tramiteActual?.tipo_tramite}" → "${data.tipo_tramite}"`)
+  }
+  if (tramiteActual?.fecha_vencimiento !== data.fecha_vencimiento) {
+    const anterior = tramiteActual?.fecha_vencimiento
+      ? new Date(tramiteActual.fecha_vencimiento).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : 'sin fecha'
+    const nueva = data.fecha_vencimiento
+      ? new Date(data.fecha_vencimiento).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : 'sin fecha'
+    cambios.push(`vencimiento: ${anterior} → ${nueva}`)
+  }
+  if (observaciones && observaciones !== tramiteActual?.observaciones?.trim()) {
+    cambios.push(`agregó observación: "${observaciones.slice(0, 50)}${observaciones.length > 50 ? '...' : ''}"`)
+  }
+
+  const mensajeCambios = cambios.length > 0
+    ? cambios.join(' · ')
+    : 'sin cambios detectados'
+
+  // Notificar a los responsables (excepto quien editó)
+  if (tramiteActual?.asignado_a) {
+    const responsables = tramiteActual.asignado_a.split(',').map((n: string) => n.trim()).filter(Boolean)
+    for (const responsable of responsables) {
+      if (responsable !== usuario) {
+        await supabase.from('notificaciones').insert({
+          para_usuario: responsable,
+          mensaje: `${usuario} editó "${data.tipo_tramite}" de ${clienteData?.razon_social || 'cliente'} — ${mensajeCambios}`,
+          tramite_id: id,
+        })
+      }
+    }
+  }
+
+  await registrarAuditoria(supabase, {
+    usuario,
+    accion: 'EDICION',
+    detalle: `Editó "${data.tipo_tramite}" de ${clienteData?.razon_social || 'cliente desconocido'} — ${mensajeCambios}`,
+    tramite_id: id,
+  })
+
+  revalidatePath('/tramites')
+  revalidatePath('/dashboard')
+  revalidatePath('/historial')
+  redirect('/tramites')
+}
 export async function deleteTramite(formData: FormData) {
   const supabase = createClient()
   const id = formData.get('id') as string
