@@ -135,11 +135,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
     setComentarios([])
     setNuevoComentario('')
   }
-  function cerrarDrawer() {
-  setDrawerTramite(null)
-  setComentarios([])
-  setNuevoComentario('')
-  }
+
   
   function toggleGrupo(clave: string) {
     setGruposExpandidos(prev => ({ ...prev, [clave]: !prev[clave] }))
