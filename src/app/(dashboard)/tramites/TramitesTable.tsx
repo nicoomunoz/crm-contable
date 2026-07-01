@@ -54,6 +54,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
   const [confirmarBorrar, setConfirmarBorrar] = useState<string | null>(null)
   const [borrando, setBorrando] = useState<string | null>(null)
   const [cambiandoEstado, setCambiandoEstado] = useState<string | null>(null)
+  const [gruposExpandidos, setGruposExpandidos] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -134,6 +135,15 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
     setComentarios([])
     setNuevoComentario('')
   }
+  function cerrarDrawer() {
+  setDrawerTramite(null)
+  setComentarios([])
+  setNuevoComentario('')
+  }
+  
+  function toggleGrupo(clave: string) {
+    setGruposExpandidos(prev => ({ ...prev, [clave]: !prev[clave] }))
+  }
 
   const tramitesFiltrados = useMemo(() => {
     return tramites
@@ -162,6 +172,23 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
         return diasA - diasB
       })
   }, [tramites, clientes, filtroResponsable, filtroEstado, busqueda, orden])
+
+    const tramitesAgrupados = useMemo(() => {
+    const grupos: Record<string, any[]> = {}
+    tramitesFiltrados.forEach(t => {
+      const fecha = new Date(t.created_at).toLocaleDateString('es-AR')
+      const clave = `${t.tipo_tramite}__${t.creado_por}__${fecha}`
+      if (!grupos[clave]) grupos[clave] = []
+      grupos[clave].push(t)
+    })
+    return Object.entries(grupos).map(([clave, items]) => ({
+      clave,
+      tipo_tramite: items[0].tipo_tramite,
+      creado_por: items[0].creado_por,
+      items,
+      esGrupo: items.length > 1,
+    }))
+  }, [tramitesFiltrados])
 
   const urgentes = tramites.filter(t => {
     if (!t.fecha_vencimiento || t.estado === 'finalizado') return false
@@ -227,115 +254,137 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
         </button>
       </div>
 
-      {/* VISTA MOBILE */}
+            {/* VISTA MOBILE */}
       <div className="md:hidden space-y-2">
-        {tramitesFiltrados.length === 0 ? (
+        {tramitesAgrupados.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-100 py-12 text-center">
             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">No hay trámites que coincidan</p>
           </div>
         ) : (
-          tramitesFiltrados.map((t: any) => {
-            const dias = t.fecha_vencimiento ? diasRestantes(t.fecha_vencimiento) : null
-            const esUrgente = dias !== null && dias >= 0 && dias <= 3 && t.estado !== 'finalizado'
-            const totalNotas = comentariosRaw.filter((c: any) => c.tramite_id === t.id).length
-            const miCliente = clientes.find((c: any) => c.id === t.cliente_id)
-            const nombreClienteMostrable = miCliente ? miCliente.razon_social : 'CLIENTE'
-
+          tramitesAgrupados.map((grupo) => {
+            const expandido = gruposExpandidos[grupo.clave] !== false // por defecto expandido
             return (
-              <div key={t.id} className={`bg-white rounded-2xl border px-4 py-3 space-y-2 transition-opacity ${borrando === t.id ? 'opacity-40' : ''} ${esUrgente ? 'border-orange-200 bg-orange-50/20' : 'border-slate-100'}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider leading-none mb-0.5 truncate">{nombreClienteMostrable}</p>
-                    <p className="text-slate-800 font-black text-base leading-tight">{t.tipo_tramite}</p>
+              <div key={grupo.clave} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+                {/* Header del grupo */}
+                {grupo.esGrupo && (
+                  <button
+                    onClick={() => toggleGrupo(grupo.clave)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="text-slate-800 font-black text-sm leading-tight truncate">{grupo.tipo_tramite}</p>
+                      <span className="flex-shrink-0 text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
+                        {grupo.items.length} clientes
+                      </span>
+                    </div>
+                    <ChevronDown size={14} className={`text-slate-400 flex-shrink-0 transition-transform ${expandido ? 'rotate-180' : ''}`} />
+                  </button>
+                )}
+      
+                {/* Items del grupo */}
+                {(expandido || !grupo.esGrupo) && (
+                  <div className={grupo.esGrupo ? 'divide-y divide-slate-50' : ''}>
+                    {grupo.items.map((t: any) => {
+                      const dias = t.fecha_vencimiento ? diasRestantes(t.fecha_vencimiento) : null
+                      const esUrgente = dias !== null && dias >= 0 && dias <= 3 && t.estado !== 'finalizado'
+                      const totalNotas = comentariosRaw.filter((c: any) => c.tramite_id === t.id).length
+                      const miCliente = clientes.find((c: any) => c.id === t.cliente_id)
+                      const nombreClienteMostrable = miCliente ? miCliente.razon_social : 'CLIENTE'
+      
+                      return (
+                        <div key={t.id} className={`px-4 py-3 space-y-2 transition-opacity ${borrando === t.id ? 'opacity-40' : ''} ${esUrgente ? 'bg-orange-50/20' : ''}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider leading-none mb-0.5 truncate">{nombreClienteMostrable}</p>
+                              {!grupo.esGrupo && <p className="text-slate-800 font-black text-base leading-tight">{t.tipo_tramite}</p>}
+                            </div>
+                            <span className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                              t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500' :
+                              t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500' :
+                              'bg-emerald-50 text-emerald-600'
+                            }`}>
+                              {cambiandoEstado === t.id
+                                ? <Loader2 size={10} className="animate-spin" />
+                                : <span className={`w-1.5 h-1.5 rounded-full ${t.estado === 'pendiente' ? 'bg-orange-400' : t.estado === 'en_proceso' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
+                              }
+                              {t.estado.replace('_', ' ')}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-[11px] text-slate-400 font-semibold flex-wrap">
+                            <span>{t.creado_por || 'Admin'}</span>
+                            {t.asignado_a && t.asignado_a !== t.creado_por && (
+                              <span className="text-blue-500">→ {t.asignado_a}</span>
+                            )}
+                            {t.fecha_vencimiento && (
+                              <span className={dias !== null && dias < 0 ? 'text-red-500 font-black' : dias !== null && dias <= 3 ? 'text-orange-500 font-black' : ''}>
+                                {dias !== null && dias < 0 ? 'Vencido' : dias === 0 ? 'Hoy' : `${dias}d`} · {new Date(t.fecha_vencimiento).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-50">
+                            <div className="flex gap-1">
+                              <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
+                                <input type="hidden" name="id" value={t.id} />
+                                <input type="hidden" name="nuevoEstado" value="pendiente" />
+                                <button className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-orange-500 hover:bg-orange-50 transition">
+                                  <Circle size={16} strokeWidth={2.5} />
+                                </button>
+                              </form>
+                              <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
+                                <input type="hidden" name="id" value={t.id} />
+                                <input type="hidden" name="nuevoEstado" value="en_proceso" />
+                                <button className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-blue-600 hover:bg-blue-50 transition">
+                                  <Clock size={16} strokeWidth={2.5} />
+                                </button>
+                              </form>
+                              <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
+                                <input type="hidden" name="id" value={t.id} />
+                                <input type="hidden" name="nuevoEstado" value="finalizado" />
+                                <button className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 transition">
+                                  <CheckCircle2 size={16} strokeWidth={2.5} />
+                                </button>
+                              </form>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => abrirDrawer(t)}
+                                className="relative h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition"
+                              >
+                                <MessageSquare size={16} className={totalNotas > 0 ? 'text-blue-500' : ''} />
+                                {totalNotas > 0 && (
+                                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
+                                    {totalNotas}
+                                  </span>
+                                )}
+                              </button>
+                              <Link href={`/tramites/editar?id=${t.id}`} className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition">
+                                <Pencil size={15} />
+                              </Link>
+                              {confirmarBorrar === t.id ? (
+                                <div className="flex items-center gap-1">
+                                  <button onClick={() => handleBorrar(t.id)} className="h-8 px-2 flex items-center justify-center rounded-xl bg-red-500 text-white text-[10px] font-black transition">
+                                    {borrando === t.id ? <Loader2 size={12} className="animate-spin" /> : 'Sí'}
+                                  </button>
+                                  <button onClick={() => setConfirmarBorrar(null)} className="h-8 px-2 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 text-[10px] font-black transition">
+                                    No
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-red-400 hover:bg-red-50 transition"
+                                  onClick={() => setConfirmarBorrar(t.id)}
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                  <span className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                    t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500' :
-                    t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500' :
-                    'bg-emerald-50 text-emerald-600'
-                  }`}>
-                    {cambiandoEstado === t.id
-                      ? <Loader2 size={10} className="animate-spin" />
-                      : <span className={`w-1.5 h-1.5 rounded-full ${t.estado === 'pendiente' ? 'bg-orange-400' : t.estado === 'en_proceso' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
-                    }
-                    {t.estado.replace('_', ' ')}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 text-[11px] text-slate-400 font-semibold flex-wrap">
-                  <span>{t.creado_por || 'Admin'}</span>
-                  {t.asignado_a && t.asignado_a !== t.creado_por && (
-                    <span className="text-blue-500">→ {t.asignado_a}</span>
-                  )}
-                  {t.fecha_vencimiento && (
-                    <span className={dias !== null && dias < 0 ? 'text-red-500 font-black' : dias !== null && dias <= 3 ? 'text-orange-500 font-black' : ''}>
-                      {dias !== null && dias < 0 ? 'Vencido' : dias === 0 ? 'Hoy' : `${dias}d`} · {new Date(t.fecha_vencimiento).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center justify-between pt-1 border-t border-slate-50">
-                  <div className="flex gap-1">
-                    <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
-                      <input type="hidden" name="id" value={t.id} />
-                      <input type="hidden" name="nuevoEstado" value="pendiente" />
-                      <button className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-orange-500 hover:bg-orange-50 transition">
-                        <Circle size={16} strokeWidth={2.5} />
-                      </button>
-                    </form>
-                    <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
-                      <input type="hidden" name="id" value={t.id} />
-                      <input type="hidden" name="nuevoEstado" value="en_proceso" />
-                      <button className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-blue-600 hover:bg-blue-50 transition">
-                        <Clock size={16} strokeWidth={2.5} />
-                      </button>
-                    </form>
-                    <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
-                      <input type="hidden" name="id" value={t.id} />
-                      <input type="hidden" name="nuevoEstado" value="finalizado" />
-                      <button className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 transition">
-                        <CheckCircle2 size={16} strokeWidth={2.5} />
-                      </button>
-                    </form>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => abrirDrawer(t)}
-                      className="relative h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition"
-                    >
-                      <MessageSquare size={16} className={totalNotas > 0 ? 'text-blue-500' : ''} />
-                      {totalNotas > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
-                          {totalNotas}
-                        </span>
-                      )}
-                    </button>
-                    <Link href={`/tramites/editar?id=${t.id}`} className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition">
-                      <Pencil size={15} />
-                    </Link>
-                    {confirmarBorrar === t.id ? (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleBorrar(t.id)}
-                          className="h-8 px-2 flex items-center justify-center rounded-xl bg-red-500 text-white text-[10px] font-black transition"
-                        >
-                          {borrando === t.id ? <Loader2 size={12} className="animate-spin" /> : 'Sí'}
-                        </button>
-                        <button
-                          onClick={() => setConfirmarBorrar(null)}
-                          className="h-8 px-2 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 text-[10px] font-black transition"
-                        >
-                          No
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-red-400 hover:bg-red-50 transition"
-                        onClick={() => setConfirmarBorrar(t.id)}
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    )}
-                  </div>
-                </div>
+                )}
               </div>
             )
           })
@@ -352,7 +401,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
         </div>
       </div>
 
-      {/* VISTA DESKTOP */}
+            {/* VISTA DESKTOP */}
       <div className="hidden md:block bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-xl">
         <table className="w-full text-left">
           <thead className="border-b-2 border-slate-200">
@@ -366,175 +415,204 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
               <th className="px-4 py-5"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
-            {tramitesFiltrados.length === 0 ? (
+          <tbody>
+            {tramitesAgrupados.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-16 text-slate-600 font-bold uppercase text-xs tracking-widest">
                   No hay trámites que coincidan
                 </td>
               </tr>
             ) : (
-              tramitesFiltrados.map((t: any) => {
-                const dias = t.fecha_vencimiento ? diasRestantes(t.fecha_vencimiento) : null
-                const esUrgente = dias !== null && dias >= 0 && dias <= 3 && t.estado !== 'finalizado'
-                const totalNotas = comentariosRaw.filter((c: any) => c.tramite_id === t.id).length
-                const miCliente = clientes.find((c: any) => c.id === t.cliente_id)
-                const nombreClienteMostrable = miCliente ? miCliente.razon_social : 'CLIENTE'
-
+              tramitesAgrupados.map((grupo) => {
+                const expandido = gruposExpandidos[grupo.clave] !== false
                 return (
-                  <tr key={t.id} className={`transition-all group ${borrando === t.id ? 'opacity-40' : ''} ${esUrgente ? 'bg-red-50/30 hover:bg-red-50/50' : 'hover:bg-slate-50/60'}`}>
-                    <td className="px-8 py-5">
-                      <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">{nombreClienteMostrable}</p>
-                      <p className="text-slate-800 font-black text-base tracking-tight leading-snug">{t.tipo_tramite}</p>
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <div className="space-y-1">
-                        <span className="inline-block bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wide px-3 py-1 rounded-full">
-                          {t.creado_por || 'Admin'}
-                        </span>
-                        {t.asignado_a && t.asignado_a !== t.creado_por && (
-                          <p className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">→ {t.asignado_a}</p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      {t.fecha_vencimiento ? <BadgeVencimiento fecha={t.fecha_vencimiento} /> : <span className="text-slate-200 text-xs">—</span>}
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wide ${
-                        t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500' :
-                        t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500' :
-                        'bg-emerald-50 text-emerald-600'
-                      }`}>
-                        {cambiandoEstado === t.id
-                          ? <Loader2 size={10} className="animate-spin" />
-                          : <span className={`w-1.5 h-1.5 rounded-full ${t.estado === 'pendiente' ? 'bg-orange-400' : t.estado === 'en_proceso' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
-                        }
-                        {t.estado.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex gap-2 justify-center items-center">
-                        <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
-                          <input type="hidden" name="id" value={t.id} />
-                          <input type="hidden" name="nuevoEstado" value="pendiente" />
-                          <button title="Marcar pendiente" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-orange-500 hover:bg-orange-50 border-2 border-transparent transition-all active:scale-90">
-                            <Circle size={18} strokeWidth={2.5} />
-                          </button>
-                        </form>
-                        <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
-                          <input type="hidden" name="id" value={t.id} />
-                          <input type="hidden" name="nuevoEstado" value="en_proceso" />
-                          <button title="Marcar en proceso" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 border-2 border-transparent transition-all active:scale-90">
-                            <Clock size={18} strokeWidth={2.5} />
-                          </button>
-                        </form>
-                        <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
-                          <input type="hidden" name="id" value={t.id} />
-                          <input type="hidden" name="nuevoEstado" value="finalizado" />
-                          <button title="Marcar finalizado" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 border-2 border-transparent transition-all active:scale-90">
-                            <CheckCircle2 size={18} strokeWidth={2.5} />
-                          </button>
-                        </form>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <button
-                        onClick={() => abrirDrawer(t)}
-                        className="group relative flex items-center justify-center h-10 w-16 mx-auto bg-white border-2 border-slate-300 rounded-xl hover:border-blue-600 hover:shadow-md transition-all active:scale-95 shadow-sm"
-                      >
-                        <MessageSquare size={18} className={totalNotas > 0 ? 'text-blue-500' : 'text-slate-300'} />
-                        {totalNotas > 0 && (
-                          <span className="absolute -top-2 -right-1 bg-blue-600 text-white text-[11px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
-                            {totalNotas}
-                          </span>
-                        )}
-                      </button>
-                    </td>
-                    <td className="px-4 py-5">
-                      <button
-                        onClick={(e) => {
-                          const rect = e.currentTarget.getBoundingClientRect()
-                          setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right })
-                          setMenuAbierto(menuAbierto === t.id ? null : t.id)
-                          setConfirmarBorrar(null)
-                        }}
-                        className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition"
-                      >
-                        <MoreHorizontal size={15} />
-                      </button>
-                      {menuAbierto === t.id && menuPos && (
-                        <div
-                          ref={menuRef}
-                          className="fixed z-[9999] bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-56 overflow-hidden"
-                          style={{ top: menuPos.top, right: menuPos.right }}
-                        >
-                          <Link
-                            href={`/tramites/editar?id=${t.id}`}
-                            className="flex items-center gap-3 px-4 py-2.5 text-xs font-black text-slate-600 hover:bg-slate-50 transition uppercase"
-                            onClick={() => setMenuAbierto(null)}
+                  <>
+                    {/* Fila header del grupo */}
+                    {grupo.esGrupo && (
+                      <tr key={`header-${grupo.clave}`} className="bg-slate-50 border-b border-slate-100">
+                        <td colSpan={7} className="px-8 py-3">
+                          <button
+                            onClick={() => toggleGrupo(grupo.clave)}
+                            className="flex items-center gap-3 w-full text-left"
                           >
-                            <Pencil size={12} className="text-blue-400" /> Editar
-                          </Link>
-                          <div className="px-4 py-2.5 border-t border-slate-50">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wide mb-1.5">Asignar a</p>
-                            <form onSubmit={async (e) => {
-                              e.preventDefault()
-                              const formData = new FormData(e.currentTarget)
-                              await asignarTramite(formData)
-                              setMenuAbierto(null)
-                            }}>
-                              <input type="hidden" name="id" value={t.id} />
-                              <select
-                                name="asignado_a"
-                                className="w-full text-xs border border-slate-200 rounded-xl px-2 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 mb-1.5"
-                                defaultValue={t.asignado_a || ''}
+                            <ChevronDown size={14} className={`text-slate-400 transition-transform flex-shrink-0 ${expandido ? 'rotate-180' : ''}`} />
+                            <p className="text-slate-800 font-black text-sm tracking-tight">{grupo.tipo_tramite}</p>
+                            <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2.5 py-1 rounded-full">
+                              {grupo.items.length} clientes
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-semibold ml-auto">
+                              por {grupo.creado_por}
+                            </span>
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+      
+                    {/* Filas de cada trámite del grupo */}
+                    {(expandido || !grupo.esGrupo) && grupo.items.map((t: any) => {
+                      const dias = t.fecha_vencimiento ? diasRestantes(t.fecha_vencimiento) : null
+                      const esUrgente = dias !== null && dias >= 0 && dias <= 3 && t.estado !== 'finalizado'
+                      const totalNotas = comentariosRaw.filter((c: any) => c.tramite_id === t.id).length
+                      const miCliente = clientes.find((c: any) => c.id === t.cliente_id)
+                      const nombreClienteMostrable = miCliente ? miCliente.razon_social : 'CLIENTE'
+      
+                      return (
+                        <tr key={t.id} className={`transition-all border-b border-slate-50 ${borrando === t.id ? 'opacity-40' : ''} ${esUrgente ? 'bg-red-50/30 hover:bg-red-50/50' : grupo.esGrupo ? 'hover:bg-blue-50/20' : 'hover:bg-slate-50/60'}`}>
+                          <td className={`py-4 ${grupo.esGrupo ? 'pl-16 pr-6' : 'px-8 py-5'}`}>
+                            <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">{nombreClienteMostrable}</p>
+                            {!grupo.esGrupo && <p className="text-slate-800 font-black text-base tracking-tight leading-snug">{t.tipo_tramite}</p>}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <div className="space-y-1">
+                              <span className="inline-block bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wide px-3 py-1 rounded-full">
+                                {t.creado_por || 'Admin'}
+                              </span>
+                              {t.asignado_a && t.asignado_a !== t.creado_por && (
+                                <p className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">→ {t.asignado_a}</p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            {t.fecha_vencimiento ? <BadgeVencimiento fecha={t.fecha_vencimiento} /> : <span className="text-slate-200 text-xs">—</span>}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wide ${
+                              t.estado === 'pendiente' ? 'bg-orange-50 text-orange-500' :
+                              t.estado === 'en_proceso' ? 'bg-blue-50 text-blue-500' :
+                              'bg-emerald-50 text-emerald-600'
+                            }`}>
+                              {cambiandoEstado === t.id
+                                ? <Loader2 size={10} className="animate-spin" />
+                                : <span className={`w-1.5 h-1.5 rounded-full ${t.estado === 'pendiente' ? 'bg-orange-400' : t.estado === 'en_proceso' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
+                              }
+                              {t.estado.replace('_', ' ')}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex gap-2 justify-center items-center">
+                              <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
+                                <input type="hidden" name="id" value={t.id} />
+                                <input type="hidden" name="nuevoEstado" value="pendiente" />
+                                <button title="Marcar pendiente" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-orange-500 hover:bg-orange-50 border-2 border-transparent transition-all active:scale-90">
+                                  <Circle size={18} strokeWidth={2.5} />
+                                </button>
+                              </form>
+                              <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
+                                <input type="hidden" name="id" value={t.id} />
+                                <input type="hidden" name="nuevoEstado" value="en_proceso" />
+                                <button title="Marcar en proceso" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 border-2 border-transparent transition-all active:scale-90">
+                                  <Clock size={18} strokeWidth={2.5} />
+                                </button>
+                              </form>
+                              <form action={async (formData) => { setCambiandoEstado(t.id); await updateTramiteStatus(formData); setCambiandoEstado(null) }}>
+                                <input type="hidden" name="id" value={t.id} />
+                                <input type="hidden" name="nuevoEstado" value="finalizado" />
+                                <button title="Marcar finalizado" className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 border-2 border-transparent transition-all active:scale-90">
+                                  <CheckCircle2 size={18} strokeWidth={2.5} />
+                                </button>
+                              </form>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <button
+                              onClick={() => abrirDrawer(t)}
+                              className="group relative flex items-center justify-center h-10 w-16 mx-auto bg-white border-2 border-slate-300 rounded-xl hover:border-blue-600 hover:shadow-md transition-all active:scale-95 shadow-sm"
+                            >
+                              <MessageSquare size={18} className={totalNotas > 0 ? 'text-blue-500' : 'text-slate-300'} />
+                              {totalNotas > 0 && (
+                                <span className="absolute -top-2 -right-1 bg-blue-600 text-white text-[11px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                                  {totalNotas}
+                                </span>
+                              )}
+                            </button>
+                          </td>
+                          <td className="px-4 py-4">
+                            <button
+                              onClick={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect()
+                                setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right })
+                                setMenuAbierto(menuAbierto === t.id ? null : t.id)
+                                setConfirmarBorrar(null)
+                              }}
+                              className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition"
+                            >
+                              <MoreHorizontal size={15} />
+                            </button>
+                            {menuAbierto === t.id && menuPos && (
+                              <div
+                                ref={menuRef}
+                                className="fixed z-[9999] bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 w-56 overflow-hidden"
+                                style={{ top: menuPos.top, right: menuPos.right }}
                               >
-                                <option value="">Sin asignar</option>
-                                {usuarios.map((u: any) => (
-                                  <option key={u.nombre} value={u.nombre}>{u.nombre}</option>
-                                ))}
-                              </select>
-                              <button type="submit" className="w-full py-1.5 bg-blue-600 text-white text-[10px] font-black rounded-xl hover:bg-blue-700 transition uppercase tracking-wide">
-                                Asignar
-                              </button>
-                            </form>
-                          </div>
-                          <div className="border-t border-slate-50">
-                            {confirmarBorrar === t.id ? (
-                              <div className="px-4 py-2.5 space-y-2">
-                                <p className="text-[10px] font-black text-red-500 uppercase tracking-wide">¿Confirmar borrado?</p>
-                                <div className="flex gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleBorrar(t.id)}
-                                    className="flex-1 py-1.5 bg-red-500 text-white text-[10px] font-black rounded-xl hover:bg-red-600 transition flex items-center justify-center gap-1"
-                                  >
-                                    {borrando === t.id ? <Loader2 size={11} className="animate-spin" /> : 'Sí, borrar'}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setConfirmarBorrar(null)}
-                                    className="flex-1 py-1.5 bg-slate-100 text-slate-600 text-[10px] font-black rounded-xl hover:bg-slate-200 transition"
-                                  >
-                                    Cancelar
-                                  </button>
+                                <Link
+                                  href={`/tramites/editar?id=${t.id}`}
+                                  className="flex items-center gap-3 px-4 py-2.5 text-xs font-black text-slate-600 hover:bg-slate-50 transition uppercase"
+                                  onClick={() => setMenuAbierto(null)}
+                                >
+                                  <Pencil size={12} className="text-blue-400" /> Editar
+                                </Link>
+                                <div className="px-4 py-2.5 border-t border-slate-50">
+                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-wide mb-1.5">Asignar a</p>
+                                  <form onSubmit={async (e) => {
+                                    e.preventDefault()
+                                    const formData = new FormData(e.currentTarget)
+                                    await asignarTramite(formData)
+                                    setMenuAbierto(null)
+                                  }}>
+                                    <input type="hidden" name="id" value={t.id} />
+                                    <select
+                                      name="asignado_a"
+                                      className="w-full text-xs border border-slate-200 rounded-xl px-2 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 mb-1.5"
+                                      defaultValue={t.asignado_a || ''}
+                                    >
+                                      <option value="">Sin asignar</option>
+                                      {usuarios.map((u: any) => (
+                                        <option key={u.nombre} value={u.nombre}>{u.nombre}</option>
+                                      ))}
+                                    </select>
+                                    <button type="submit" className="w-full py-1.5 bg-blue-600 text-white text-[10px] font-black rounded-xl hover:bg-blue-700 transition uppercase tracking-wide">
+                                      Asignar
+                                    </button>
+                                  </form>
+                                </div>
+                                <div className="border-t border-slate-50">
+                                  {confirmarBorrar === t.id ? (
+                                    <div className="px-4 py-2.5 space-y-2">
+                                      <p className="text-[10px] font-black text-red-500 uppercase tracking-wide">¿Confirmar borrado?</p>
+                                      <div className="flex gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleBorrar(t.id)}
+                                          className="flex-1 py-1.5 bg-red-500 text-white text-[10px] font-black rounded-xl hover:bg-red-600 transition flex items-center justify-center gap-1"
+                                        >
+                                          {borrando === t.id ? <Loader2 size={11} className="animate-spin" /> : 'Sí, borrar'}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setConfirmarBorrar(null)}
+                                          className="flex-1 py-1.5 bg-slate-100 text-slate-600 text-[10px] font-black rounded-xl hover:bg-slate-200 transition"
+                                        >
+                                          Cancelar
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-black text-red-400 hover:bg-red-50 transition uppercase"
+                                      onClick={() => setConfirmarBorrar(t.id)}
+                                    >
+                                      <Trash2 size={12} /> Borrar
+                                    </button>
+                                  )}
                                 </div>
                               </div>
-                            ) : (
-                              <button
-                                type="button"
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-black text-red-400 hover:bg-red-50 transition uppercase"
-                                onClick={() => setConfirmarBorrar(t.id)}
-                              >
-                                <Trash2 size={12} /> Borrar
-                              </button>
                             )}
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </>
                 )
               })
             )}
