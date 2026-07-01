@@ -247,20 +247,40 @@ export async function updateTramite(formData: FormData) {
     .single()
 
   const { error } = await supabase.from('tramites').update(data).eq('id', id)
-  if (error) throw new Error(error.message)
-
-  await registrarAuditoria(supabase, {
-    usuario,
-    accion: 'EDICION',
-    detalle: `Editó "${data.tipo_tramite}" de ${clienteData?.razon_social || 'cliente desconocido'}`,
-    tramite_id: id,
-  })
-
-  revalidatePath('/tramites')
-  revalidatePath('/dashboard')
-  revalidatePath('/historial')
-  redirect('/tramites')
-}
+    if (error) throw new Error(error.message)
+  
+    // Notificar a los responsables (excepto quien editó)
+    const { data: tramiteConAsignado } = await supabase
+      .from('tramites')
+      .select('asignado_a')
+      .eq('id', id)
+      .single()
+  
+    if (tramiteConAsignado?.asignado_a) {
+      const responsables = tramiteConAsignado.asignado_a.split(',').map((n: string) => n.trim()).filter(Boolean)
+      for (const responsable of responsables) {
+        if (responsable !== usuario) {
+          await supabase.from('notificaciones').insert({
+            para_usuario: responsable,
+            mensaje: `${usuario} editó el trámite "${data.tipo_tramite}" de ${clienteData?.razon_social || 'cliente'}`,
+            tramite_id: id,
+          })
+        }
+      }
+    }
+  
+    await registrarAuditoria(supabase, {
+      usuario,
+      accion: 'EDICION',
+      detalle: `Editó "${data.tipo_tramite}" de ${clienteData?.razon_social || 'cliente desconocido'}`,
+      tramite_id: id,
+    })
+  
+    revalidatePath('/tramites')
+    revalidatePath('/dashboard')
+    revalidatePath('/historial')
+    redirect('/tramites')
+  }
 
 export async function deleteTramite(formData: FormData) {
   const supabase = createClient()
