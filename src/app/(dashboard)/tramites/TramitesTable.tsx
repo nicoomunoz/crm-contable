@@ -453,7 +453,7 @@ export default function TramitesTable({ tramites, clientes, comentariosRaw, usua
                       const nombreClienteMostrable = miCliente ? miCliente.razon_social : 'CLIENTE'
       
                       return (
-                        <tr key={t.id} className={`transition-all border-b border-slate-50 ${borrando === t.id ? 'opacity-40' : ''} ${esUrgente ? 'bg-red-50/30 hover:bg-red-50/50' : grupo.esGrupo ? 'bg-blue-50/10 hover:bg-blue-50/30' : 'hover:bg-slate-50/60'}`}>
+                        <tr key={t.id} className={`transition-all border-b border-slate-50 ${borrando === t.id ? 'opacity-40' : ''} ${esUrgente ? 'bg-red-50/30 hover:bg-red-50/50' : grupo.esGrupo ? 'bg-blue-50/40 hover:bg-blue-50/60' : 'hover:bg-slate-50/60'}`}>
                           <td className={`py-4 ${grupo.esGrupo ? 'pl-10 pr-6' : 'px-8 py-5'}`}>
                             <p className="text-blue-500 font-black text-[10px] uppercase tracking-wider mb-0.5">{nombreClienteMostrable}</p>
                             {!grupo.esGrupo && <p className="text-slate-800 font-black text-base tracking-tight leading-snug">{t.tipo_tramite}</p>}
