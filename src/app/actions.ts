@@ -249,6 +249,16 @@ export async function updateTramite(formData: FormData) {
   const { error } = await supabase.from('tramites').update(data).eq('id', id)
     if (error) throw new Error(error.message)
   
+    // Si hay observaciones nuevas, guardarlas como comentario
+    const observaciones = (formData.get('observaciones') as string)?.trim()
+    if (observaciones) {
+      await supabase.from('comentarios').insert({
+        tramite_id: id,
+        contenido: observaciones,
+        autor: usuario,
+      })
+    }
+  
     // Notificar a los responsables (excepto quien editó)
     const { data: tramiteConAsignado } = await supabase
       .from('tramites')
