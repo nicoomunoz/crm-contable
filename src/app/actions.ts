@@ -151,7 +151,7 @@ export async function updateTramiteStatus(formData: FormData) {
 
   const { data: tramiteActual } = await supabase
     .from('tramites')
-    .select('estado, tipo_tramite, cliente_id')
+    .select('estado, tipo_tramite, cliente_id, asignado_a')
     .eq('id', id)
     .single()
 
@@ -167,6 +167,20 @@ export async function updateTramiteStatus(formData: FormData) {
     .eq('id', id)
 
   if (error) throw new Error(error.message)
+
+  // Notificar a los responsables (excepto quien hizo el cambio)
+  if (tramiteActual?.asignado_a) {
+    const responsables = tramiteActual.asignado_a.split(',').map((n: string) => n.trim()).filter(Boolean)
+    for (const responsable of responsables) {
+      if (responsable !== usuario) {
+        await supabase.from('notificaciones').insert({
+          para_usuario: responsable,
+          mensaje: `${usuario} cambió el estado de "${tramiteActual?.tipo_tramite}" (${cliente?.razon_social || 'cliente'}) a ${nuevoEstado.replace('_', ' ')}`,
+          tramite_id: id,
+        })
+      }
+    }
+  }
 
   await registrarAuditoria(supabase, {
     usuario,
